@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Вход — Hotel Booking{% endblock %}
+{% block content %}
+<div class="card auth-card">
+  <h2>Вход</h2>
+  {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+  <form method="post" action="/login">
+    <input type="hidden" name="next" value="{{ next }}">
+    <label>Email <input type="email" name="email" value="{{ form.email or '' }}" required autofocus></label>
+    <label>Пароль <input type="password" name="password" required></label>
+    <button class="btn" type="submit">Войти</button>
+  </form>
+  <p class="muted">Нет аккаунта? <a href="/register?next={{ next }}">Зарегистрироваться</a></p>
+</div>
+{% endblock %}

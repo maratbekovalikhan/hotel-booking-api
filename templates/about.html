@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}О нас — Hotel Booking{% endblock %}
+{% block content %}
+<section class="hero">
+  <h1>О нас</h1>
+  <p>Сеть отелей, где каждому гостю комфортно — в деловой поездке и на отдыхе.</p>
+</section>
+
+<h2 class="section-title">Что для нас важно</h2>
+<div class="grid grid-3">
+  <div class="card value-card"><div class="icon">🕐</div><h3>Работаем 24/7</h3><p class="muted">Ресепшн и служба поддержки на связи круглосуточно, заселение — в любое время.</p></div>
+  <div class="card value-card"><div class="icon">🤫</div><h3>Тишина и чистота</h3><p class="muted">Наш приоритет — спокойный отдых и безупречная чистота в каждом номере.</p></div>
+  <div class="card value-card"><div class="icon">📍</div><h3>Удобные локации</h3><p class="muted">Отели расположены рядом с транспортом, достопримечательностями и природой.</p></div>
+</div>
+
+<h2 class="section-title">Наши отели</h2>
+<div class="stats">
+  <div class="stat"><b>{{ hotels|length }}</b><span class="muted">отеля</span></div>
+  <div class="stat"><b>{{ total_rooms }}</b><span class="muted">номеров</span></div>
+</div>
+<div class="grid grid-3">
+  {% for h in hotels %}
+  <article class="card">
+    <div class="stars">{{ "★" * h.stars }}{{ "☆" * (5 - h.stars) }}</div>
+    <h3>{{ h.name }}</h3>
+    <p class="muted">📍 {{ h.city }}, {{ h.address }}</p>
+    <p>{{ h.description }}</p>
+    <div class="chips">{% for a in h.amenity_list %}<span class="chip">{{ a }}</span>{% endfor %}</div>
+    <p class="muted">📞 {{ h.phone }}<br>✉️ {{ h.email }}</p>
+  </article>
+  {% endfor %}
+</div>
+{% endblock %}

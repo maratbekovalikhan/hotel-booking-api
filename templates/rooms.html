@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Номера — Hotel Booking{% endblock %}
+{% block content %}
+<h1>Номера</h1>
+<p class="muted">Отелей: {{ hotels|length }} · Номеров: {{ total_rooms }} · Найдено: {{ total }}</p>
+
+<form method="get" action="/rooms" class="card form-row" style="margin-bottom:1.5rem">
+  <label>Отель
+    <select name="hotel_id">
+      <option value="">Все отели</option>
+      {% for h in hotels %}<option value="{{ h.id }}" {{ 'selected' if hid == h.id }}>{{ h.name }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Количество комнат
+    <select name="rooms_count">
+      <option value="">Любое</option>
+      {% for n in rooms_count_options %}<option value="{{ n }}" {{ 'selected' if rc == n }}>{{ n }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Сортировка
+    <select name="sort">
+      {% for key, label in sorts.items() %}<option value="{{ key }}" {{ 'selected' if sort == key }}>{{ label }}</option>{% endfor %}
+    </select>
+  </label>
+  <button class="btn" type="submit">Применить</button>
+  <a class="btn btn-ghost" style="color:var(--muted)" href="/rooms">Сбросить</a>
+</form>
+
+{% if rooms %}
+  <div class="grid">
+    {% for room in rooms %}{% include "_room_card.html" %}{% endfor %}
+  </div>
+  {% if pages > 1 %}
+  <nav class="pagination">
+    {% for n in range(1, pages + 1) %}
+      {% if n == page %}<span class="current">{{ n }}</span>
+      {% else %}<a href="/rooms?{{ qs }}{{ '&' if qs }}page={{ n }}">{{ n }}</a>{% endif %}
+    {% endfor %}
+  </nav>
+  {% endif %}
+{% else %}
+  <p class="muted">По выбранным условиям номеров нет.</p>
+{% endif %}
+{% endblock %}

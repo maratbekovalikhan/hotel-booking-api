@@ -1,0 +1,25 @@
+<div class="card room-card">
+  <div class="room-top">
+    <span class="badge">{{ room.name }}</span>
+    <span>№ {{ room.number }}</span>
+  </div>
+  <p>{{ room.description }}</p>
+  <ul class="specs">
+    <li>👥 Мест: {{ room.capacity }}</li>
+    <li>🚪 Комнат: {{ room.rooms_count }}</li>
+  </ul>
+  <div class="room-bottom">
+    <div class="price">
+      {{ room.price_per_night }} ₸ <small>/ ночь</small>
+    </div>
+
+    <!-- Форма бронирования отправляет данные на /book -->
+    <form action="/book" method="post">
+      <input type="hidden" name="room_number" value="{{ room.number }}">
+      <!-- Передаем даты, которые пользователь выбрал при поиске -->
+      <input type="hidden" name="check_in" value="{{ ci }}">
+      <input type="hidden" name="check_out" value="{{ co }}">
+      <button type="submit" class="btn" style="width: 100%;">Забронировать</button>
+    </form>
+  </div>
+</div>

@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Hotel Booking{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="container header-inner">
+    <a class="logo" href="/">Hotel<span>Booking</span></a>
+    <nav class="nav">
+      <a href="/" class="{{ 'active' if active == 'home' }}">Главное</a>
+      <a href="/rooms" class="{{ 'active' if active == 'rooms' }}">Номера</a>
+      <a href="/about" class="{{ 'active' if active == 'about' }}">О нас</a>
+    </nav>
+    <div class="auth">
+      {% if user %}
+        <a href="/account" class="{{ 'active' if active == 'account' }}">👤 {{ user.full_name }}</a>
+        <form method="post" action="/logout"><button class="btn btn-ghost" type="submit">Выйти</button></form>
+      {% else %}
+        <a href="/login">Войти</a>
+        <a class="btn" href="/register">Регистрация</a>
+      {% endif %}
+    </div>
+  </div>
+</header>
+
+<main class="container">
+  {% if flash %}<div class="alert alert-{{ flash.category }}">{{ flash.message }}</div>{% endif %}
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <h4>Контакты</h4>
+        <p>📞 {{ contacts.phone }}</p>
+        <p>✉️ {{ contacts.email }}</p>
+        <p>📍 {{ contacts.address }}</p>
+      </div>
+      <div>
+        <h4>Наши отели</h4>
+        {% for h in footer_hotels %}
+        <p><b>{{ h.name }}</b><br>{{ h.city }}, {{ h.address }}<br>{{ h.phone }}</p>
+        {% endfor %}
+      </div>
+      <div>
+        <h4>Приложение</h4>
+        <p>Бронируйте номера с телефона:</p>
+        <div class="app-links">
+          <a class="btn btn-ghost" href="{{ contacts.app_store }}">App Store</a>
+          <a class="btn btn-ghost" href="{{ contacts.google_play }}">Google Play</a>
+        </div>
+      </div>
+    </div>
+    <div class="copy">© Hotel Booking. Работаем 24/7.</div>
+  </div>
+</footer>
+</body>
+</html>

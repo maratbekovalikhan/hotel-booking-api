@@ -1,5 +1,3 @@
-"""Демо-данные: 3 отеля и 197 номеров (60 + 72 + 65).
-Адреса, телефоны и описания вымышленные — замените на свои."""
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -56,25 +54,33 @@ HOTELS = [
 
 
 def seed_database(db: Session) -> None:
+    # Если в базе уже есть отели, ничего не делаем
     if db.scalar(select(models.Hotel.id).limit(1)) is not None:
         return
 
     for data in HOTELS:
+        # 1. Создаем и сразу добавляем отель в сессию
         hotel = models.Hotel(
             **{k: v for k, v in data.items() if k not in ("rooms", "base_price")}
         )
+        db.add(hotel)
+        db.flush()  # Заставляем SQLAlchemy присвоить отелю ID без сохранения всей транзакции
+
+        # 2. Генерируем комнаты, явно передавая hotel_id
         for i in range(data["rooms"]):
             floor, pos = divmod(i, len(FLOOR_LAYOUT))
             name, capacity, rooms_count, mult, desc = ROOM_TYPES[FLOOR_LAYOUT[pos]]
-            hotel.rooms.append(
-                models.Room(
-                    number=(floor + 1) * 100 + pos + 1,
-                    name=name,
-                    capacity=capacity,
-                    rooms_count=rooms_count,
-                    price_per_night=round(data["base_price"] * mult, -2),
-                    description=desc,
-                )
+
+            room = models.Room(
+                hotel_id=hotel.id,  # Теперь ID отеля точно существует
+                number=(floor + 1) * 100 + pos + 1,
+                name=name,
+                capacity=capacity,
+                rooms_count=rooms_count,
+                price_per_night=round(data["base_price"] * mult, -2),
+                description=desc,
             )
-        db.add(hotel)
+            db.add(room)
+
+    # 3. Сохраняем все отели и комнаты одной транзакцией
     db.commit()

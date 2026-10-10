@@ -1,81 +1,48 @@
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Бронирование отеля</title>
-  <style>
-    body { font-family: system-ui, sans-serif; max-width: 900px; margin: 2rem auto; padding: 0 1rem; color: #222; }
-    h1, h2 { margin-bottom: .5rem; }
-    table { width: 100%; border-collapse: collapse; margin-bottom: 2rem; }
-    th, td { text-align: left; padding: .5rem .6rem; border-bottom: 1px solid #ddd; }
-    th { background: #f5f5f5; }
-    form.book { display: flex; flex-wrap: wrap; gap: 1rem; align-items: end; margin-bottom: 2rem; }
-    label { display: flex; flex-direction: column; font-size: .9rem; gap: .25rem; }
-    input, select, button { padding: .45rem .6rem; font-size: 1rem; }
-    button { cursor: pointer; }
-    .error { background: #fde8e8; color: #9b1c1c; padding: .75rem 1rem; border-radius: 6px; margin-bottom: 1rem; }
-    .muted { color: #777; }
-    form.inline { display: inline; }
-  </style>
-</head>
-<body>
-  <h1>Бронирование отеля</h1>
-
-  <h2>Комнаты</h2>
-  <table>
-    <tr><th>Номер</th><th>Тип</th><th>Мест</th><th>Цена за ночь</th></tr>
-    {% for room in rooms %}
-    <tr>
-      <td>{{ room.number }}</td>
-      <td>{{ room.name }}</td>
-      <td>{{ room.capacity }}</td>
-      <td>{{ "%.0f"|format(room.price_per_night) }} ₽</td>
-    </tr>
-    {% endfor %}
-  </table>
-
-  <h2>Забронировать</h2>
-  {% if error %}<div class="error">{{ error }}</div>{% endif %}
-  <form class="book" method="post" action="/book">
-    <label>Комната
-      <select name="room_number" required>
-        {% for room in rooms %}
-        <option value="{{ room.number }}" {% if form.room_number|string == room.number|string %}selected{% endif %}>
-          {{ room.number }} — {{ room.name }}
-        </option>
-        {% endfor %}
+{% extends "base.html" %}
+{% block title %}Главное — Hotel Booking{% endblock %}
+{% block content %}
+<section class="hero">
+  <h1>Найдите свободный номер</h1>
+  <p>Выберите даты — мы покажем доступные номера во всех наших отелях.</p>
+  <form method="get" action="/" class="form-row">
+    <label>Отель
+      <select name="hotel_id">
+        <option value="">Любой</option>
+        {% for h in hotels %}<option value="{{ h.id }}" {{ 'selected' if hid == h.id }}>{{ h.name }}</option>{% endfor %}
       </select>
     </label>
-    <label>Дата заезда
-      <input type="date" name="check_in" min="{{ today }}" value="{{ form.check_in or '' }}" required>
-    </label>
-    <label>Дата выезда
-      <input type="date" name="check_out" min="{{ today }}" value="{{ form.check_out or '' }}" required>
-    </label>
-    <button type="submit">Забронировать</button>
+    <label>Заезд <input type="date" name="check_in" min="{{ today }}" value="{{ ci }}" required></label>
+    <label>Выезд <input type="date" name="check_out" min="{{ today }}" value="{{ co }}" required></label>
+    <label>Гостей <input type="number" name="guests" min="1" max="10" value="{{ guests }}" placeholder="Любое" style="width:100px"></label>
+    <button class="btn" type="submit">Найти</button>
   </form>
+</section>
 
-  <h2>Текущие брони</h2>
-  {% if bookings %}
-  <table>
-    <tr><th>#</th><th>Комната</th><th>Заезд</th><th>Выезд</th><th></th></tr>
-    {% for b in bookings %}
-    <tr>
-      <td>{{ b.id }}</td>
-      <td>{{ b.room.number }}</td>
-      <td>{{ b.check_in.strftime("%d.%m.%Y") }}</td>
-      <td>{{ b.check_out.strftime("%d.%m.%Y") }}</td>
-      <td>
-        <form class="inline" method="post" action="/bookings/{{ b.id }}/delete">
-          <button type="submit">Отменить</button>
-        </form>
-      </td>
-    </tr>
-    {% endfor %}
-  </table>
+{% if searched %}
+  <h2 class="section-title">Свободные номера</h2>
+  {% if search_error %}
+    <div class="alert alert-error">{{ search_error }}</div>
+  {% elif rooms %}
+    <p class="muted">Найдено: {{ total }}{% if total > shown_limit %} (показаны первые {{ shown_limit }} — уточните поиск){% endif %}</p>
+    <div class="grid">
+      {% for room in rooms %}{% include "_room_card.html" %}{% endfor %}
+    </div>
   {% else %}
-  <p class="muted">Броней пока нет.</p>
+    <p class="muted">На выбранные даты свободных номеров нет. Попробуйте другие даты или отель.</p>
   {% endif %}
-</body>
-</html>
+{% endif %}
+
+<h2 class="section-title">Наши отели</h2>
+<div class="grid grid-3">
+  {% for h in hotels %}
+  <article class="card">
+    <div class="stars">{{ "★" * h.stars }}{{ "☆" * (5 - h.stars) }}</div>
+    <h3>{{ h.name }}</h3>
+    <p class="muted">📍 {{ h.city }}, {{ h.address }}</p>
+    <p>{{ h.description }}</p>
+    <div class="chips">{% for a in h.amenity_list %}<span class="chip">{{ a }}</span>{% endfor %}</div>
+    <a class="btn" href="/rooms?hotel_id={{ h.id }}">Смотреть номера</a>
+  </article>
+  {% endfor %}
+</div>
+{% endblock %}

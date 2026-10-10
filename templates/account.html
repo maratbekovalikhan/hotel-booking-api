@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Мой кабинет — Hotel Booking{% endblock %}
+{% block content %}
+<h1>Личный кабинет</h1>
+<p class="muted">{{ user.full_name }} · {{ user.email }}</p>
+
+<h2 class="section-title">Текущие и будущие брони</h2>
+{% if upcoming %}
+<div class="table-wrap"><table>
+  <tr><th>Отель</th><th>Номер</th><th>Заезд</th><th>Выезд</th><th>Ночей</th><th>Сумма</th><th></th></tr>
+  {% for b in upcoming %}
+  <tr>
+    <td>{{ b.room.hotel.name }}</td>
+    <td>{{ b.room.number }} · {{ b.room.name }}</td>
+    <td>{{ b.check_in.strftime("%d.%m.%Y") }}</td>
+    <td>{{ b.check_out.strftime("%d.%m.%Y") }}</td>
+    <td>{{ b.nights }}</td>
+    <td>{{ b.total_price|money }} ₸</td>
+    <td>
+      {% if b.check_in > now %}
+      <form method="post" action="/bookings/{{ b.id }}/cancel"><button class="btn btn-danger" type="submit">Отменить</button></form>
+      {% else %}<span class="muted">Проживание</span>{% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+</table></div>
+{% else %}
+<p class="muted">Броней пока нет. <a href="/">Найти свободный номер</a></p>
+{% endif %}
+
+{% if past %}
+<h2 class="section-title">История</h2>
+<div class="table-wrap"><table>
+  <tr><th>Отель</th><th>Номер</th><th>Заезд</th><th>Выезд</th><th>Сумма</th></tr>
+  {% for b in past %}
+  <tr>
+    <td>{{ b.room.hotel.name }}</td>
+    <td>{{ b.room.number }} · {{ b.room.name }}</td>
+    <td>{{ b.check_in.strftime("%d.%m.%Y") }}</td>
+    <td>{{ b.check_out.strftime("%d.%m.%Y") }}</td>
+    <td>{{ b.total_price|money }} ₸</td>
+  </tr>
+  {% endfor %}
+</table></div>
+{% endif %}
+{% endblock %}

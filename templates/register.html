@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Регистрация — Hotel Booking{% endblock %}
+{% block content %}
+<div class="card auth-card">
+  <h2>Регистрация</h2>
+  {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+  <form method="post" action="/register">
+    <input type="hidden" name="next" value="{{ next }}">
+    <label>Имя <input type="text" name="full_name" value="{{ form.full_name or '' }}" required autofocus></label>
+    <label>Email <input type="email" name="email" value="{{ form.email or '' }}" required></label>
+    <label>Пароль (от 6 символов) <input type="password" name="password" minlength="6" required></label>
+    <label>Повторите пароль <input type="password" name="password2" minlength="6" required></label>
+    <button class="btn" type="submit">Создать аккаунт</button>
+  </form>
+  <p class="muted">Уже есть аккаунт? <a href="/login?next={{ next }}">Войти</a></p>
+</div>
+{% endblock %}
