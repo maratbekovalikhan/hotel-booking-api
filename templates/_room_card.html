@@ -1,25 +1,48 @@
-<div class="card room-card">
+<article class="card room-card">
   <div class="room-top">
-    <span class="badge">{{ room.name }}</span>
-    <span>№ {{ room.number }}</span>
+    <span class="badge">№ {{ room.number }}</span>
+    <span class="muted">📍 {{ room.hotel.name }}</span>
   </div>
+  <h3>{{ room.name }}</h3>
   <p>{{ room.description }}</p>
   <ul class="specs">
-    <li>👥 Мест: {{ room.capacity }}</li>
     <li>🚪 Комнат: {{ room.rooms_count }}</li>
+    <li>👥 До {{ room.capacity }} гостей</li>
   </ul>
   <div class="room-bottom">
-    <div class="price">
-      {{ room.price_per_night }} ₸ <small>/ ночь</small>
-    </div>
+    <!-- Используем ваш красивый фильтр разделения тысяч для денег -->
+    <div class="price">{{ room.price_per_night|money }} ₸ <small>/ ночь</small></div>
 
-    <!-- Форма бронирования отправляет данные на /book -->
-    <form action="/book" method="post">
-      <input type="hidden" name="room_number" value="{{ room.number }}">
-      <!-- Передаем даты, которые пользователь выбрал при поиске -->
-      <input type="hidden" name="check_in" value="{{ ci }}">
-      <input type="hidden" name="check_out" value="{{ co }}">
-      <button type="submit" class="btn" style="width: 100%;">Забронировать</button>
-    </form>
+    {% if user %}
+      {% set back %}{{ request.url.path }}{% if request.url.query %}?{{ request.url.query }}{% endif %}{% endset %}
+
+      {% if ci and co %}
+        <!-- Если пользователь ИСКАЛ по датам — показываем прямую кнопку -->
+        <form method="post" action="/book">
+          <input type="hidden" name="room_id" value="{{ room.id }}">
+          <input type="hidden" name="check_in" value="{{ ci }}">
+          <input type="hidden" name="check_out" value="{{ co }}">
+          <input type="hidden" name="redirect_to" value="{{ back }}">
+          <button class="btn" type="submit" style="width:100%">Забронировать</button>
+        </form>
+      {% else %}
+        <!-- Если зашли просто на вкладку "Номера" без поиска — даем выбрать даты прямо здесь -->
+        <details class="book-details">
+          <summary class="btn" style="width: 100%; text-align: center; list-style: none;">Забронировать</summary>
+          <form method="post" action="/book">
+            <input type="hidden" name="room_id" value="{{ room.id }}">
+            <input type="hidden" name="redirect_to" value="{{ back }}">
+            <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.5rem;">
+              <label>Заезд <input type="date" name="check_in" min="{{ today }}" required></label>
+              <label>Выезд <input type="date" name="check_out" min="{{ today }}" required></label>
+              <button class="btn" type="submit">Подтвердить бронь</button>
+            </div>
+          </form>
+        </details>
+      {% endif %}
+    {% else %}
+      <!-- Если пользователь не вошел в систему — отправляем его авторизоваться -->
+      <a class="btn btn-ghost" style="display:block;text-align:center" href="/login?next={{ request.url.path }}">Войдите, чтобы забронировать</a>
+    {% endif %}
   </div>
-</div>
+</article>
