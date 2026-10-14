@@ -1,7 +1,13 @@
+"""Демо-данные: 3 отеля и 197 номеров (60 + 72 + 65).
+Адреса, телефоны и описания вымышленные — замените на свои."""
+import os
+
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 import models
+from constants import ROLE_SUPERADMIN
+from security import hash_password
 
 # (тип, гостей, комнат в номере, множитель цены, описание)
 ROOM_TYPES = [
@@ -54,33 +60,47 @@ HOTELS = [
 
 
 def seed_database(db: Session) -> None:
-    # Если в базе уже есть отели, ничего не делаем
     if db.scalar(select(models.Hotel.id).limit(1)) is not None:
         return
 
     for data in HOTELS:
-        # 1. Создаем и сразу добавляем отель в сессию
         hotel = models.Hotel(
             **{k: v for k, v in data.items() if k not in ("rooms", "base_price")}
         )
-        db.add(hotel)
-        db.flush()  # Заставляем SQLAlchemy присвоить отелю ID без сохранения всей транзакции
-
-        # 2. Генерируем комнаты, явно передавая hotel_id
         for i in range(data["rooms"]):
             floor, pos = divmod(i, len(FLOOR_LAYOUT))
             name, capacity, rooms_count, mult, desc = ROOM_TYPES[FLOOR_LAYOUT[pos]]
-
-            room = models.Room(
-                hotel_id=hotel.id,  # Теперь ID отеля точно существует
-                number=(floor + 1) * 100 + pos + 1,
-                name=name,
-                capacity=capacity,
-                rooms_count=rooms_count,
-                price_per_night=round(data["base_price"] * mult, -2),
-                description=desc,
+            hotel.rooms.append(
+                models.Room(
+                    number=(floor + 1) * 100 + pos + 1,
+                    name=name,
+                    capacity=capacity,
+                    rooms_count=rooms_count,
+                    price_per_night=round(data["base_price"] * mult, -2),
+                    description=desc,
+                )
             )
-            db.add(room)
-
-    # 3. Сохраняем все отели и комнаты одной транзакцией
+        db.add(hotel)
     db.commit()
+
+
+def seed_superadmin(db: Session) -> None:
+    """Создаёт первого суперадмина. Логин/пароль — из SUPERADMIN_EMAIL / SUPERADMIN_PASSWORD."""
+    if db.scalar(select(models.User.id).where(models.User.role == ROLE_SUPERADMIN).limit(1)):
+        return
+    email = os.getenv("SUPERADMIN_EMAIL", "admin@hotel.local").strip().lower()
+    password = os.getenv("SUPERADMIN_PASSWORD", "admin12345")
+    db.add(models.User(
+        email=email, full_name="Суперадминистратор",
+        password_hash=hash_password(password), role=ROLE_SUPERADMIN,
+    ))
+    db.commit()
+    if "SUPERADMIN_PASSWORD" not in os.environ:
+        print(f"[!] Создан суперадмин {email} с ПАРОЛЕМ ПО УМОЛЧАНИЮ — смените его "
+              "(задайте SUPERADMIN_PASSWORD до первого запуска).")
+
+
+def seed_settings(db: Session) -> None:
+    if db.get(models.Setting, "commission_percent") is None:
+        db.add(models.Setting(key="commission_percent", value="10"))
+        db.commit()
