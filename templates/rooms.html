@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_macros.html" import pager %}
 {% block title %}Номера — Hotel Booking{% endblock %}
 {% block content %}
 <h1>Номера</h1>
@@ -30,14 +31,7 @@
   <div class="grid">
     {% for room in rooms %}{% include "_room_card.html" %}{% endfor %}
   </div>
-  {% if pages > 1 %}
-  <nav class="pagination">
-    {% for n in range(1, pages + 1) %}
-      {% if n == page %}<span class="current">{{ n }}</span>
-      {% else %}<a href="/rooms?{{ qs }}{{ '&' if qs }}page={{ n }}">{{ n }}</a>{% endif %}
-    {% endfor %}
-  </nav>
-  {% endif %}
+  {{ pager(page, pages, "/rooms", qs) }}
 {% else %}
   <p class="muted">По выбранным условиям номеров нет.</p>
 {% endif %}

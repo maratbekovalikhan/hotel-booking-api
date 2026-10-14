@@ -1,0 +1,53 @@
+{% macro stars(n) %}<span class="stars">{{ "★" * n }}{{ "☆" * (5 - n) }}</span>{% endmacro %}
+
+{% macro status_badge(status) %}<span class="st st-{{ status }}">{{ BOOKING_STATUS_LABELS[status] }}</span>{% endmacro %}
+
+{% macro pager(page, pages, base, qs) %}
+{% if pages > 1 %}
+<nav class="pagination">
+  {% for n in range(1, pages + 1) %}
+    {% if n == page %}<span class="current">{{ n }}</span>
+    {% else %}<a href="{{ base }}?{{ qs }}{{ '&' if qs }}page={{ n }}">{{ n }}</a>{% endif %}
+  {% endfor %}
+</nav>
+{% endif %}
+{% endmacro %}
+
+{# Таблица броней для ресепшена: кто, где, даты, срок, статус, действия #}
+{% macro bookings_table(items, today, back) %}
+<div class="table-wrap"><table>
+  <tr><th>#</th><th>Гость</th><th>Отель / номер</th><th>Заезд</th><th>Выезд</th><th>Срок</th><th>Статус</th><th></th></tr>
+  {% for b in items %}
+  <tr>
+    <td>{{ b.id }}</td>
+    <td>{{ b.user.full_name }}<br><small class="muted">{{ b.user.email }}</small></td>
+    <td>{{ b.room.hotel.name }}<br><small class="muted">№ {{ b.room.number }} · {{ b.room.name }} · {{ b.room.capacity }} гост.</small></td>
+    <td>{{ b.check_in.strftime("%d.%m.%Y") }}</td>
+    <td>{{ b.check_out.strftime("%d.%m.%Y") }}</td>
+    <td>
+      {% if b.status in ('pending', 'paid', 'checked_in') %}
+        {% if b.days_left > 0 %}ещё {{ b.days_left }} дн.
+        {% elif b.days_left == 0 %}выезд сегодня
+        {% else %}<span class="text-danger">просрочено на {{ -b.days_left }} дн.</span>{% endif %}
+      {% else %}—{% endif %}
+    </td>
+    <td>{{ status_badge(b.status) }}</td>
+    <td>
+      {% if b.status == 'paid' and b.check_in <= today and today < b.check_out %}
+        <form method="post" action="/reception/bookings/{{ b.id }}/check-in">
+          <input type="hidden" name="redirect_to" value="{{ back }}">
+          <button class="btn btn-sm" type="submit">Заселить</button>
+        </form>
+      {% elif b.status == 'checked_in' %}
+        <form method="post" action="/reception/bookings/{{ b.id }}/check-out">
+          <input type="hidden" name="redirect_to" value="{{ back }}">
+          <button class="btn btn-sm btn-danger" type="submit">Выселить</button>
+        </form>
+      {% endif %}
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="8" class="muted">Нет записей.</td></tr>
+  {% endfor %}
+</table></div>
+{% endmacro %}

@@ -12,12 +12,17 @@
     <a class="logo" href="/">Hotel<span>Booking</span></a>
     <nav class="nav">
       <a href="/" class="{{ 'active' if active == 'home' }}">Главное</a>
+      <a href="/hotels" class="{{ 'active' if active == 'hotels' }}">Отели</a>
       <a href="/rooms" class="{{ 'active' if active == 'rooms' }}">Номера</a>
       <a href="/about" class="{{ 'active' if active == 'about' }}">О нас</a>
+      {% if user and user.role in ('receptionist', 'superadmin') %}<a href="/reception" class="staff {{ 'active' if active == 'reception' }}">Ресепшен</a>{% endif %}
+      {% if user and user.role in ('manager', 'superadmin') %}<a href="/manager" class="staff {{ 'active' if active == 'manager' }}">Менеджер</a>{% endif %}
+      {% if user and user.role == 'superadmin' %}<a href="/admin" class="staff {{ 'active' if active == 'admin' }}">Админ</a>{% endif %}
     </nav>
     <div class="auth">
       {% if user %}
-        <a href="/account" class="{{ 'active' if active == 'account' }}">👤 {{ user.full_name }}</a>
+        <a href="/account" class="{{ 'active' if active == 'account' }}">👤 {{ user.full_name }}
+          {% if user.role != 'customer' %}<span class="role-badge">{{ ROLE_LABELS[user.role] }}</span>{% endif %}</a>
         <form method="post" action="/logout"><button class="btn btn-ghost" type="submit">Выйти</button></form>
       {% else %}
         <a href="/login">Войти</a>

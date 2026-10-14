@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Сотрудники — Hotel Booking{% endblock %}
+{% block content %}
+{% if is_admin %}
+<h1>Суперадминистратор</h1>
+{% include "_admin_nav.html" %}
+{% else %}
+<h1>Менеджер платформы</h1>
+{% include "_manager_nav.html" %}
+{% endif %}
+
+<h2 class="section-title">{% if is_admin %}Создать сотрудника{% else %}Создать сотрудника ресепшена{% endif %}</h2>
+<form method="post" action="{{ '/admin/staff' if is_admin else '/manager/staff' }}" class="card form-row">
+  <label>Имя <input name="full_name" required></label>
+  <label>Email <input type="email" name="email" required></label>
+  <label>Пароль (от 6 символов) <input type="password" name="password" minlength="6" required></label>
+  {% if is_admin %}
+  <label>Роль
+    <select name="role">
+      <option value="receptionist">{{ ROLE_LABELS['receptionist'] }}</option>
+      <option value="manager">{{ ROLE_LABELS['manager'] }}</option>
+    </select>
+  </label>
+  {% endif %}
+  <button class="btn" type="submit">Создать</button>
+</form>
+<p class="muted">Передайте сотруднику email и пароль — он сможет сменить пароль в личном кабинете.</p>
+
+<h2 class="section-title">Сотрудники ({{ staff_list|length }})</h2>
+<div class="table-wrap"><table>
+  <tr><th>Сотрудник</th><th>Роль</th>{% if is_admin %}<th>Права менеджера</th><th></th>{% endif %}</tr>
+  {% for s in staff_list %}
+  <tr>
+    <td>{{ s.full_name }}<br><small class="muted">{{ s.email }}</small></td>
+    <td>{{ ROLE_LABELS[s.role] }}</td>
+    {% if is_admin %}
+    <td>
+      {% if s.role == 'manager' %}
+      <form method="post" action="/admin/staff/{{ s.id }}/permissions" class="stack-sm">
+        <label class="check"><input type="checkbox" name="can_create_receptionists" value="1" {{ 'checked' if s.can_create_receptionists }}> создавать ресепшен</label>
+        <label class="check"><input type="checkbox" name="can_add_hotels" value="1" {{ 'checked' if s.can_add_hotels }}> добавлять отели и номера</label>
+        <button class="btn btn-sm" type="submit">Сохранить права</button>
+      </form>
+      {% else %}<span class="muted">—</span>{% endif %}
+    </td>
+    <td><form method="post" action="/admin/staff/{{ s.id }}/delete" onsubmit="return confirm('Удалить сотрудника {{ s.full_name }}?')"><button class="btn btn-sm btn-danger" type="submit">Удалить</button></form></td>
+    {% endif %}
+  </tr>
+  {% else %}
+  <tr><td colspan="4" class="muted">Сотрудников пока нет.</td></tr>
+  {% endfor %}
+</table></div>
+{% endblock %}

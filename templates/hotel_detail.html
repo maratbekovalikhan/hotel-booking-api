@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% from "_macros.html" import stars %}
+{% block title %}{{ hotel.name }} — Hotel Booking{% endblock %}
+{% block content %}
+<p><a href="/hotels">← Все отели</a></p>
+<section class="card">
+  <div>{{ stars(hotel.stars) }}</div>
+  <h1 style="margin:.25rem 0">{{ hotel.name }}</h1>
+  <p class="muted">📍 {{ hotel.city }}, {{ hotel.address }} · 📞 {{ hotel.phone }} · ✉️ {{ hotel.email }}</p>
+  <p>{{ hotel.description }}</p>
+  <div class="chips">{% for a in hotel.amenity_list %}<span class="chip">{{ a }}</span>{% endfor %}</div>
+  {% if rating %}<p>⭐ <b>{{ rating[0] }}</b> из 5 · отзывов: {{ rating[1] }}</p>{% endif %}
+  <a class="btn" href="/rooms?hotel_id={{ hotel.id }}">Смотреть номера</a>
+</section>
+
+<h2 class="section-title">Типы номеров и цены</h2>
+<div class="table-wrap"><table>
+  <tr><th>Тип</th><th>Номеров</th><th>Комнат</th><th>Гостей</th><th>Цена от</th></tr>
+  {% for name, cnt, price, cap, rc in room_types %}
+  <tr><td>{{ name }}</td><td>{{ cnt }}</td><td>{{ rc }}</td><td>до {{ cap }}</td><td>{{ price|money }} ₸</td></tr>
+  {% endfor %}
+</table></div>
+
+<h2 class="section-title">Отзывы гостей</h2>
+{% for r in reviews %}
+<article class="card" style="margin-bottom:.75rem">
+  <div><span class="stars">{{ "★" * r.rating }}{{ "☆" * (5 - r.rating) }}</span> <b>{{ r.user.full_name }}</b>
+    <small class="muted"> · {{ r.created_at.strftime("%d.%m.%Y") }}</small></div>
+  <p style="margin:.4rem 0 0">{{ r.text }}</p>
+</article>
+{% else %}
+<p class="muted">Отзывов пока нет. Их могут оставить гости после проживания.</p>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Отели — Менеджер{% endblock %}
+{% block content %}
+<h1>Менеджер платформы</h1>
+{% include "_manager_nav.html" %}
+
+<h2 class="section-title">Модерация новых отелей ({{ pending|length }})</h2>
+{% for h in pending %}
+<article class="card" style="margin-bottom:1rem">
+  <b>{{ h.name }}</b> · {{ h.city }}, {{ h.address }} · {{ "★" * h.stars }}
+  <p class="muted" style="margin:.3rem 0">{{ h.description }}</p>
+  <p class="muted" style="margin:.3rem 0">Услуги: {{ h.amenities or "—" }} · 📞 {{ h.phone }} · ✉️ {{ h.email }}</p>
+  {% if h.submitted_by_id == user.id and user.role != 'superadmin' %}
+    <p class="muted">Вы добавили этот отель — модерировать его должен другой менеджер или суперадмин.</p>
+  {% else %}
+  <form method="post" action="/manager/hotels/{{ h.id }}/moderate" class="form-row">
+    <label style="flex:1">Комментарий (обязателен при отклонении) <input type="text" name="note"></label>
+    <button class="btn btn-sm" type="submit" name="action" value="approve">Одобрить</button>
+    <button class="btn btn-sm btn-danger" type="submit" name="action" value="reject">Отклонить</button>
+  </form>
+  {% endif %}
+</article>
+{% else %}
+<p class="muted">Новых отелей на модерации нет.</p>
+{% endfor %}
+
+<h2 class="section-title">Все отели</h2>
+<div class="table-wrap"><table>
+  <tr><th>Отель</th><th>Город</th><th>Звёзды</th><th>Номеров</th><th>Статус</th><th>Комментарий</th></tr>
+  {% for h in hotels %}
+  <tr>
+    <td>{{ h.name }}</td><td>{{ h.city }}</td><td>{{ h.stars }}</td><td>{{ room_counts.get(h.id, 0) }}</td>
+    <td><span class="st st-hotel-{{ h.status }}">{{ HOTEL_STATUS_LABELS[h.status] }}</span></td>
+    <td class="muted">{{ h.moderation_note or "" }}</td>
+  </tr>
+  {% endfor %}
+</table></div>
+
+{% if can_add %}
+<h2 class="section-title">Добавить отель</h2>
+<form method="post" action="/manager/hotels/new" class="card stack">
+  <div class="form-row">
+    <label>Название <input name="name" required></label>
+    <label>Город <input name="city" required></label>
+    <label>Адрес <input name="address" required></label>
+    <label>Звёзды <input type="number" name="stars" min="1" max="5" value="4" style="width:90px" required></label>
+  </div>
+  <label>Описание <textarea name="description" rows="2" required></textarea></label>
+  <label>Услуги через запятую (СПА, Ресторан, Бассейн…) <input name="amenities"></label>
+  <div class="form-row">
+    <label>Телефон <input name="phone" required></label>
+    <label>Email <input type="email" name="email" required></label>
+  </div>
+  <p class="muted" style="margin:0">{% if user.role == 'superadmin' %}Отель будет опубликован сразу.{% else %}Отель появится на сайте после одобрения другим менеджером или суперадмином.{% endif %}</p>
+  <div><button class="btn" type="submit">Добавить отель</button></div>
+</form>
+
+<h2 class="section-title">Добавить номер</h2>
+<form method="post" action="/manager/rooms/new" class="card stack">
+  <div class="form-row">
+    <label>Отель
+      <select name="hotel_id" required>{% for h in hotels %}<option value="{{ h.id }}">{{ h.name }}</option>{% endfor %}</select>
+    </label>
+    <label>Номер <input type="number" name="number" min="1" style="width:100px" required></label>
+    <label>Тип <input name="name" placeholder="Стандарт" required></label>
+    <label>Гостей <input type="number" name="capacity" min="1" value="2" style="width:90px" required></label>
+    <label>Комнат <input type="number" name="rooms_count" min="1" value="1" style="width:90px" required></label>
+    <label>Цена за ночь, ₸ <input type="number" name="price_per_night" min="1" style="width:130px" required></label>
+  </div>
+  <label>Описание <input name="description" required></label>
+  <div><button class="btn" type="submit">Добавить номер</button></div>
+</form>
+{% else %}
+<div class="alert alert-error" style="margin-top:2rem">Суперадминистратор ограничил вам добавление новых отелей и номеров.</div>
+{% endif %}
+{% endblock %}

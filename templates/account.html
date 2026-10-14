@@ -1,46 +1,80 @@
 {% extends "base.html" %}
-{% block title %}Мой кабинет — Hotel Booking{% endblock %}
+{% from "_macros.html" import status_badge %}
+{% block title %}Личный кабинет — Hotel Booking{% endblock %}
 {% block content %}
 <h1>Личный кабинет</h1>
-<p class="muted">{{ user.full_name }} · {{ user.email }}</p>
+<p class="muted">{{ user.full_name }} · {{ user.email }} · {{ ROLE_LABELS[user.role] }}</p>
 
-<h2 class="section-title">Текущие и будущие брони</h2>
-{% if upcoming %}
-<div class="table-wrap"><table>
-  <tr><th>Отель</th><th>Номер</th><th>Заезд</th><th>Выезд</th><th>Ночей</th><th>Сумма</th><th></th></tr>
-  {% for b in upcoming %}
-  <tr>
-    <td>{{ b.room.hotel.name }}</td>
-    <td>{{ b.room.number }} · {{ b.room.name }}</td>
-    <td>{{ b.check_in.strftime("%d.%m.%Y") }}</td>
-    <td>{{ b.check_out.strftime("%d.%m.%Y") }}</td>
-    <td>{{ b.nights }}</td>
-    <td>{{ b.total_price|money }} ₸</td>
-    <td>
-      {% if b.check_in > now %}
-      <form method="post" action="/bookings/{{ b.id }}/cancel"><button class="btn btn-danger" type="submit">Отменить</button></form>
-      {% else %}<span class="muted">Проживание</span>{% endif %}
-    </td>
-  </tr>
-  {% endfor %}
-</table></div>
+{% if user.role == 'customer' %}
+<h2 class="section-title">Мои поездки</h2>
+{% for b in bookings %}
+<article class="card" style="margin-bottom:1rem">
+  <div class="booking-head">
+    <div>
+      <b>{{ b.room.hotel.name }}</b> · № {{ b.room.number }} · {{ b.room.name }}<br>
+      <span class="muted">{{ b.check_in.strftime("%d.%m.%Y") }} — {{ b.check_out.strftime("%d.%m.%Y") }} · ночей: {{ b.nights }} · {{ b.total_price|money }} ₸</span>
+    </div>
+    <div>{{ status_badge(b.status) }}
+      {% if b.payment and b.payment.status == 'refunded' %}<span class="st st-refunded">Возврат оформлен</span>{% endif %}
+    </div>
+  </div>
+
+  <div class="actions">
+    {% if b.can_pay %}
+    <form method="post" action="/bookings/{{ b.id }}/pay"><button class="btn btn-sm" type="submit">Оплатить {{ b.total_price|money }} ₸ (демо)</button></form>
+    {% endif %}
+    {% if b.can_cancel %}
+    <form method="post" action="/bookings/{{ b.id }}/cancel"><button class="btn btn-sm btn-danger" type="submit">Отменить</button></form>
+    {% endif %}
+  </div>
+
+  {% if b.can_review %}
+  <details class="inline-details"><summary>Оставить отзыв</summary>
+    <form method="post" action="/bookings/{{ b.id }}/review" class="stack">
+      <label>Оценка
+        <select name="rating">{% for n in (5, 4, 3, 2, 1) %}<option value="{{ n }}">{{ n }} {{ "★" * n }}</option>{% endfor %}</select>
+      </label>
+      <label>Отзыв <textarea name="text" rows="3" minlength="5" maxlength="1000" required></textarea></label>
+      <button class="btn btn-sm" type="submit">Отправить</button>
+    </form>
+  </details>
+  {% elif b.review %}
+  <p class="muted" style="margin:.5rem 0 0">Ваш отзыв: {{ "★" * b.review.rating }} — {{ b.review.text }}</p>
+  {% endif %}
+
+  {% if b.status != 'cancelled' or (b.payment and b.payment.status == 'paid') %}
+    {% if b.has_open_dispute %}
+      <p class="muted" style="margin:.5rem 0 0">⏳ Обращение в поддержку рассматривается менеджером.</p>
+    {% else %}
+    <details class="inline-details"><summary>Возникла проблема? Написать в поддержку</summary>
+      <form method="post" action="/bookings/{{ b.id }}/dispute" class="stack">
+        <label>Опишите ситуацию <textarea name="message" rows="3" minlength="10" maxlength="2000" required></textarea></label>
+        <button class="btn btn-sm" type="submit">Отправить менеджеру</button>
+      </form>
+    </details>
+    {% endif %}
+  {% endif %}
+</article>
 {% else %}
-<p class="muted">Броней пока нет. <a href="/">Найти свободный номер</a></p>
+<p class="muted">Поездок пока нет. <a href="/">Найти свободный номер</a></p>
+{% endfor %}
+{% else %}
+<div class="alert alert-success">Вы вошли как сотрудник. Рабочие разделы — в верхнем меню.</div>
 {% endif %}
 
-{% if past %}
-<h2 class="section-title">История</h2>
-<div class="table-wrap"><table>
-  <tr><th>Отель</th><th>Номер</th><th>Заезд</th><th>Выезд</th><th>Сумма</th></tr>
-  {% for b in past %}
-  <tr>
-    <td>{{ b.room.hotel.name }}</td>
-    <td>{{ b.room.number }} · {{ b.room.name }}</td>
-    <td>{{ b.check_in.strftime("%d.%m.%Y") }}</td>
-    <td>{{ b.check_out.strftime("%d.%m.%Y") }}</td>
-    <td>{{ b.total_price|money }} ₸</td>
-  </tr>
-  {% endfor %}
-</table></div>
-{% endif %}
+<h2 class="section-title">Профиль</h2>
+<div class="grid grid-3">
+  <form method="post" action="/account/profile" class="card stack">
+    <h3>Имя</h3>
+    <label>Имя <input type="text" name="full_name" value="{{ user.full_name }}" required></label>
+    <button class="btn btn-sm" type="submit">Сохранить</button>
+  </form>
+  <form method="post" action="/account/password" class="card stack">
+    <h3>Смена пароля</h3>
+    <label>Текущий пароль <input type="password" name="old_password" required></label>
+    <label>Новый пароль <input type="password" name="new_password" minlength="6" required></label>
+    <label>Повторите новый <input type="password" name="new_password2" minlength="6" required></label>
+    <button class="btn btn-sm" type="submit">Изменить пароль</button>
+  </form>
+</div>
 {% endblock %}

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Менеджер платформы — Hotel Booking{% endblock %}
+{% block content %}
+<h1>Менеджер платформы</h1>
+{% include "_manager_nav.html" %}
+<div class="grid grid-3">
+  <a class="card tile" href="/manager/hotels"><b>{{ stats.pending_hotels }}</b><span>отелей на модерации</span></a>
+  <a class="card tile" href="/manager/disputes"><b>{{ stats.open_disputes }}</b><span>открытых споров</span></a>
+  <a class="card tile" href="/manager/disputes"><b>{{ stats.refunds_due }}</b><span>возвратов к оформлению</span></a>
+  <a class="card tile" href="/manager/users"><b>{{ stats.blocked_users }}</b><span>заблокированных пользователей</span></a>
+  <a class="card tile" href="/manager/blocks"><b>{{ stats.active_blocks }}</b><span>блокировок номеров</span></a>
+</div>
+{% endblock %}

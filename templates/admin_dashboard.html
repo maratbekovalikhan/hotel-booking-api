@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Суперадмин — Hotel Booking{% endblock %}
+{% block content %}
+<h1>Суперадминистратор</h1>
+{% include "_admin_nav.html" %}
+
+<h2 class="section-title">Финансы (демо-оплаты)</h2>
+<div class="grid grid-3">
+  <div class="card tile"><b>{{ gross|money }} ₸</b><span>всего оплачено</span></div>
+  <div class="card tile"><b>{{ refunded|money }} ₸</b><span>возвращено</span></div>
+  <div class="card tile"><b>{{ net|money }} ₸</b><span>чистая выручка</span></div>
+  <div class="card tile"><b>{{ commission|money }} ₸</b><span>комиссия платформы ({{ percent }}%)</span></div>
+</div>
+
+<form method="post" action="/admin/settings/commission" class="card form-row" style="margin-top:1rem">
+  <label>Комиссия платформы, %
+    <input type="number" name="percent" min="0" max="100" step="0.1" value="{{ percent }}" style="width:120px" required>
+  </label>
+  <button class="btn" type="submit">Сохранить</button>
+</form>
+
+<h2 class="section-title">Пользователи по ролям</h2>
+<div class="chips">
+  {% for role, label in ROLE_LABELS.items() %}<span class="chip">{{ label }}: {{ users_by_role.get(role, 0) }}</span>{% endfor %}
+</div>
+<h2 class="section-title">Брони по статусам</h2>
+<div class="chips">
+  {% for k, label in BOOKING_STATUS_LABELS.items() %}<span class="chip">{{ label }}: {{ bookings_by_status.get(k, 0) }}</span>{% endfor %}
+</div>
+{% endblock %}

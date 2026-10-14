@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% from "_macros.html" import pager %}
+{% block title %}Пользователи — Менеджер{% endblock %}
+{% block content %}
+<h1>Менеджер платформы</h1>
+{% include "_manager_nav.html" %}
+
+<form method="get" action="/manager/users" class="card form-row" style="margin-bottom:1.5rem">
+  <label style="flex:1">Поиск по имени или email <input name="q" value="{{ q }}"></label>
+  <button class="btn" type="submit">Найти</button>
+</form>
+<p class="muted">Найдено: {{ total }}{% if user.role != 'superadmin' %} · менеджер управляет только клиентами{% endif %}</p>
+
+<div class="table-wrap"><table>
+  <tr><th>Пользователь</th><th>Роль</th><th>Статус</th><th>Действие</th></tr>
+  {% for u in items %}
+  <tr>
+    <td>{{ u.full_name }}<br><small class="muted">{{ u.email }}</small></td>
+    <td>{{ ROLE_LABELS[u.role] }}</td>
+    <td>{% if u.is_blocked %}<span class="st st-cancelled">Заблокирован</span><br><small class="muted">{{ u.blocked_reason }}</small>{% else %}<span class="st st-paid">Активен</span>{% endif %}</td>
+    <td>
+      {% if u.id != user.id %}
+        {% if u.is_blocked %}
+        <form method="post" action="/manager/users/{{ u.id }}/unblock"><button class="btn btn-sm" type="submit">Разблокировать</button></form>
+        {% else %}
+        <form method="post" action="/manager/users/{{ u.id }}/block" class="inline-form">
+          <input name="reason" placeholder="Причина блокировки" required minlength="3">
+          <button class="btn btn-sm btn-danger" type="submit">Заблокировать</button>
+        </form>
+        {% endif %}
+      {% endif %}
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="4" class="muted">Никого не найдено.</td></tr>
+  {% endfor %}
+</table></div>
+{{ pager(page, pages, "/manager/users", ("q=" ~ q|urlencode) if q else "") }}
+{% endblock %}

@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Споры и возвраты — Менеджер{% endblock %}
+{% block content %}
+<h1>Менеджер платформы</h1>
+{% include "_manager_nav.html" %}
+
+<h2 class="section-title">Открытые споры ({{ open_disputes|length }})</h2>
+{% for d in open_disputes %}
+<article class="card" style="margin-bottom:1rem">
+  <div class="booking-head">
+    <div><b>Спор #{{ d.id }}</b> · {{ d.user.full_name }} <small class="muted">({{ d.user.email }})</small><br>
+      <span class="muted">{{ d.booking.room.hotel.name }}, № {{ d.booking.room.number }} ·
+      {{ d.booking.check_in.strftime("%d.%m.%Y") }}–{{ d.booking.check_out.strftime("%d.%m.%Y") }} ·
+      {{ BOOKING_STATUS_LABELS[d.booking.status] }}</span></div>
+    <small class="muted">{{ d.created_at.strftime("%d.%m.%Y %H:%M") }}</small>
+  </div>
+  <p>{{ d.message }}</p>
+  <form method="post" action="/manager/disputes/{{ d.id }}/resolve" class="form-row">
+    <label style="flex:1">Решение <input name="resolution" required minlength="5"></label>
+    <button class="btn btn-sm" type="submit">Закрыть спор</button>
+  </form>
+  {% set p = d.booking.payment %}
+  {% if p and p.status == 'paid' %}
+  <form method="post" action="/manager/payments/{{ p.id }}/refund" class="form-row" style="margin-top:.5rem">
+    <label style="flex:1">Причина возврата {{ p.amount|money }} ₸ <input name="reason" required minlength="3"></label>
+    <button class="btn btn-sm btn-danger" type="submit">Вернуть средства</button>
+  </form>
+  {% endif %}
+</article>
+{% else %}
+<p class="muted">Открытых споров нет.</p>
+{% endfor %}
+
+<h2 class="section-title">Возвраты к оформлению — отменённые оплаченные брони ({{ refunds_due|length }})</h2>
+<div class="table-wrap"><table>
+  <tr><th>Клиент</th><th>Отель / номер</th><th>Даты</th><th>Сумма</th><th>Возврат</th></tr>
+  {% for p in refunds_due %}
+  <tr>
+    <td>{{ p.booking.user.full_name }}<br><small class="muted">{{ p.booking.user.email }}</small></td>
+    <td>{{ p.booking.room.hotel.name }} · № {{ p.booking.room.number }}</td>
+    <td>{{ p.booking.check_in.strftime("%d.%m.%Y") }}–{{ p.booking.check_out.strftime("%d.%m.%Y") }}</td>
+    <td>{{ p.amount|money }} ₸</td>
+    <td>
+      <form method="post" action="/manager/payments/{{ p.id }}/refund" class="inline-form">
+        <input name="reason" placeholder="Причина" required minlength="3" value="Отмена брони клиентом">
+        <button class="btn btn-sm" type="submit">Вернуть</button>
+      </form>
+    </td>
+  </tr>
+  {% else %}
+  <tr><td colspan="5" class="muted">Возвратов нет.</td></tr>
+  {% endfor %}
+</table></div>
+
+{% if resolved %}
+<h2 class="section-title">Недавно закрытые</h2>
+<div class="table-wrap"><table>
+  <tr><th>#</th><th>Клиент</th><th>Обращение</th><th>Решение</th><th>Кто закрыл</th></tr>
+  {% for d in resolved %}
+  <tr><td>{{ d.id }}</td><td>{{ d.user.full_name }}</td><td>{{ d.message[:80] }}</td><td>{{ d.resolution }}</td><td>{{ d.resolved_by }}</td></tr>
+  {% endfor %}
+</table></div>
+{% endif %}
+{% endblock %}

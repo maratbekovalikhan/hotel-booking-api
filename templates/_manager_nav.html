@@ -1,0 +1,8 @@
+<div class="subnav">
+  <a href="/manager" class="{{ 'active' if sub == 'dashboard' }}">Обзор</a>
+  <a href="/manager/hotels" class="{{ 'active' if sub == 'hotels' }}">Отели</a>
+  <a href="/manager/disputes" class="{{ 'active' if sub == 'disputes' }}">Споры и возвраты</a>
+  <a href="/manager/users" class="{{ 'active' if sub == 'users' }}">Пользователи</a>
+  <a href="/manager/blocks" class="{{ 'active' if sub == 'blocks' }}">Блокировка номеров</a>
+  {% if user.role == 'superadmin' or user.can_create_receptionists %}<a href="/manager/staff" class="{{ 'active' if sub == 'staff' and not is_admin }}">Ресепшен</a>{% endif %}
+</div>

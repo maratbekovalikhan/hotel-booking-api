@@ -88,3 +88,37 @@ table form { margin: 0; }
 .site-footer p { margin: .25rem 0; font-size: .92rem; }
 .app-links { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .5rem; }
 .copy { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid var(--navy-2); font-size: .85rem; }
+
+/* ---------- роли и панели ---------- */
+.nav { flex-wrap: wrap; }
+.nav a.staff { color: var(--gold); }
+.role-badge { background: var(--gold); color: #fff; border-radius: 99px; padding: .05rem .5rem; font-size: .7rem; margin-left: .3rem; }
+.subnav { display: flex; gap: .25rem; flex-wrap: wrap; border-bottom: 1px solid var(--line); margin: .5rem 0 1.25rem; }
+.subnav a { text-decoration: none; padding: .5rem .9rem; border-bottom: 3px solid transparent; color: var(--muted); }
+.subnav a:hover, .subnav a.active { color: var(--navy); border-bottom-color: var(--gold); }
+.btn-sm { padding: .3rem .7rem; font-size: .85rem; }
+.btn-ghost-dark { background: transparent; color: var(--navy); border: 1px solid var(--line); font-weight: 500; }
+.text-danger { color: var(--danger); }
+textarea { padding: .5rem .6rem; font-size: 1rem; border: 1px solid var(--line); border-radius: 6px; font-family: inherit; width: 100%; }
+.stack { display: flex; flex-direction: column; gap: .75rem; }
+.stack-sm { display: flex; flex-direction: column; gap: .35rem; margin: 0; }
+.check { flex-direction: row; align-items: center; gap: .4rem; color: var(--text); font-size: .85rem; }
+.inline-form { display: flex; gap: .4rem; flex-wrap: wrap; align-items: center; }
+.inline-form input { padding: .3rem .5rem; font-size: .85rem; }
+.booking-head { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.actions { display: flex; gap: .5rem; margin-top: .75rem; flex-wrap: wrap; }
+.actions form { margin: 0; }
+details.inline-details { margin-top: .75rem; }
+details.inline-details summary { cursor: pointer; color: var(--navy); font-size: .9rem; }
+details.inline-details form { margin-top: .5rem; max-width: 520px; }
+.tile { text-decoration: none; display: flex; flex-direction: column; }
+.tile b { font-size: 1.8rem; color: var(--navy); }
+.tile span { color: var(--muted); font-size: .9rem; }
+.best-price { color: var(--ok); font-weight: 700; }
+.st { display: inline-block; padding: .1rem .55rem; border-radius: 99px; font-size: .78rem; font-weight: 600; background: #eee; color: #444; }
+.st-pending { background: #fff4d6; color: #8a6100; }
+.st-paid, .st-hotel-approved, .st-hk-clean { background: var(--ok-bg); color: var(--ok); }
+.st-checked_in, .st-hk-cleaning { background: #dbeafe; color: #1e40af; }
+.st-checked_out { background: #eee; color: #555; }
+.st-cancelled, .st-hotel-rejected, .st-hk-dirty { background: var(--danger-bg); color: var(--danger); }
+.st-refunded, .st-hotel-pending { background: #ede9fe; color: #5b21b6; }

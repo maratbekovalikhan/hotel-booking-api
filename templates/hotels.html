@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% from "_macros.html" import stars %}
+{% block title %}Отели — Hotel Booking{% endblock %}
+{% block content %}
+<h1>Каталог отелей</h1>
+{% if not user %}<p class="muted">Просматривать отели, отзывы и цены может любой посетитель. Чтобы забронировать номер, <a href="/register">зарегистрируйтесь</a> или <a href="/login">войдите</a>.</p>{% endif %}
+
+<div class="grid grid-3">
+  {% for h in hotels %}
+  <article class="card">
+    <div>{{ stars(h.stars) }}</div>
+    <h3><a href="/hotels/{{ h.id }}" style="text-decoration:none">{{ h.name }}</a></h3>
+    {% if ratings.get(h.id) %}<p style="margin:0">⭐ {{ ratings[h.id][0] }} <span class="muted">· отзывов: {{ ratings[h.id][1] }}</span></p>
+    {% else %}<p class="muted" style="margin:0">Отзывов пока нет</p>{% endif %}
+    <p class="muted">📍 {{ h.city }}, {{ h.address }}</p>
+    <div class="chips">{% for a in h.amenity_list %}<span class="chip">{{ a }}</span>{% endfor %}</div>
+    <a class="btn btn-ghost" style="color:var(--navy)" href="/hotels/{{ h.id }}">Подробнее и отзывы</a>
+  </article>
+  {% endfor %}
+</div>
+
+<h2 class="section-title">Сравнение цен (от, за ночь)</h2>
+<div class="table-wrap"><table>
+  <tr><th>Тип номера</th>{% for h in hotels %}<th>{{ h.name }}</th>{% endfor %}</tr>
+  {% for t in types %}
+  <tr>
+    <td><b>{{ t }}</b></td>
+    {% for h in hotels %}
+      {% set p = table[t].get(h.id) %}
+      <td>{% if p %}<span class="{{ 'best-price' if p == cheapest[t] }}">{{ p|money }} ₸</span>{% else %}—{% endif %}</td>
+    {% endfor %}
+  </tr>
+  {% endfor %}
+</table></div>
+<p class="muted">Зелёным выделена самая выгодная цена для каждого типа номера.</p>
+{% endblock %}

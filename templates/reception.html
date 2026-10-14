@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% from "_macros.html" import bookings_table, pager %}
+{% block title %}Ресепшен — Hotel Booking{% endblock %}
+{% block content %}
+<h1>Ресепшен</h1>
+{% include "_reception_nav.html" %}
+
+<form method="get" action="/reception" class="card form-row" style="margin-bottom:1.5rem">
+  <label>Отель
+    <select name="hotel_id"><option value="">Все отели</option>
+      {% for h in hotels %}<option value="{{ h.id }}" {{ 'selected' if hid == h.id }}>{{ h.name }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Статус (для списка «Все брони»)
+    <select name="status"><option value="">Любой</option>
+      {% for k, v in BOOKING_STATUS_LABELS.items() %}<option value="{{ k }}" {{ 'selected' if status == k }}>{{ v }}</option>{% endfor %}
+    </select>
+  </label>
+  <button class="btn" type="submit">Применить</button>
+</form>
+
+<h2 class="section-title">Ожидаются к заселению ({{ arrivals|length }})</h2>
+{{ bookings_table(arrivals, today_date, back) }}
+
+<h2 class="section-title">Сейчас проживают ({{ in_house|length }})</h2>
+{{ bookings_table(in_house, today_date, back) }}
+
+<h2 class="section-title">Все брони ({{ total }})</h2>
+{{ bookings_table(all_bookings, today_date, back) }}
+{{ pager(page, pages, "/reception", qs) }}
+{% endblock %}

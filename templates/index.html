@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_macros.html" import stars %}
 {% block title %}Главное — Hotel Booking{% endblock %}
 {% block content %}
 <section class="hero">
@@ -36,8 +37,9 @@
 <div class="grid grid-3">
   {% for h in hotels %}
   <article class="card">
-    <div class="stars">{{ "★" * h.stars }}{{ "☆" * (5 - h.stars) }}</div>
-    <h3>{{ h.name }}</h3>
+    <div>{{ stars(h.stars) }}</div>
+    <h3><a href="/hotels/{{ h.id }}" style="text-decoration:none">{{ h.name }}</a></h3>
+    {% if ratings.get(h.id) %}<p class="muted" style="margin:0">⭐ {{ ratings[h.id][0] }} · отзывов: {{ ratings[h.id][1] }}</p>{% endif %}
     <p class="muted">📍 {{ h.city }}, {{ h.address }}</p>
     <p>{{ h.description }}</p>
     <div class="chips">{% for a in h.amenity_list %}<span class="chip">{{ a }}</span>{% endfor %}</div>
