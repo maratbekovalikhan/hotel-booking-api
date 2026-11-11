@@ -8,23 +8,53 @@ FastAPI + SQLAlchemy + SQLite + Jinja2. Сеть из 3 отелей и 197 но
 python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+cp .env.example .env             # затем заполните .env
+```
+
+### Вариант A: PostgreSQL (Supabase) — основной
+
+1. В `.env` укажите `DATABASE_URL` (Supabase → Connect → **Session pooler**, порт 5432).
+   Префикс `postgresql://` автоматически заменяется на `postgresql+asyncpg://`.
+2. Примените миграции и запустите сервер:
+
+```bash
+alembic upgrade head
 uvicorn main:app --reload
 ```
 
-Откройте http://127.0.0.1:8000
+Схему в PostgreSQL создаёт **только Alembic**; при старте приложение лишь заполняет демо-данные.
 
-> Схема БД изменилась. **Удалите старый `hotel.db`** перед запуском — база создастся заново.
+### Вариант B: локальная SQLite (для разработки)
+
+Не задавайте `DATABASE_URL` — проект запустится на `hotel.db` (схема создаётся автоматически):
+
+```bash
+uvicorn main:app --reload
+```
+
+На SQLite нет ограничения от двойного бронирования на уровне БД (только проверка в приложении).
+
+### Миграции
+
+```bash
+alembic current                                  # текущая версия
+alembic revision --autogenerate -m "описание"    # новая миграция после изменения models.py
+alembic upgrade head                             # применить
+alembic downgrade -1                             # откатить последнюю
+alembic check                                    # убедиться, что модели и миграции совпадают
+```
+
+- `0001` — все таблицы;
+- `0002` — ограничение `bookings_no_overlap` (EXCLUDE USING gist): БД не даст создать две
+  активные брони одного номера на пересекающиеся даты, даже при одновременных запросах.
+
+Откройте http://127.0.0.1:8000
 
 ## Первый вход (суперадмин)
 
-При первом запуске создаётся суперадмин. По умолчанию: `admin@hotel.local` / `admin12345`.
-**Смените это** — задайте свои значения до первого запуска:
-
-```bash
-export SUPERADMIN_EMAIL="you@example.com"
-export SUPERADMIN_PASSWORD="длинный-пароль"
-export SECRET_KEY="длинная-случайная-строка"
-```
+При первом запуске создаётся суперадмин из переменных `SUPERADMIN_EMAIL` / `SUPERADMIN_PASSWORD` (файл `.env`).
+Если они не заданы, используется `admin@hotel.local` / `admin12345` — **смените пароль**.
+`SECRET_KEY` (подпись сессий) тоже задаётся в `.env`.
 
 Остальных сотрудников создаёт суперадмин (`/admin/staff`) или менеджер с выданным правом (`/manager/staff`).
 Публичная регистрация всегда создаёт только **клиента**.
@@ -66,13 +96,15 @@ export SECRET_KEY="длинная-случайная-строка"
 
 ```
 main.py          приложение, middleware, подключение роутеров
-database.py      подключение к SQLite
+database.py      async-подключение (PostgreSQL/Supabase или SQLite), get_db
 models.py        User, Hotel, Room, Booking, Payment, Review, Dispute, RoomBlock, Setting
 constants.py     роли и статусы
 deps.py          авторизация, проверка ролей, рендер шаблонов
 services.py      валидация, проверка занятости номеров
 security.py      хеширование паролей (PBKDF2)
 seed.py          демо-данные, первый суперадмин
+alembic/         миграции (env.py, versions/0001, 0002)
+.env.example     шаблон переменных окружения (сам .env не коммитится)
 routers/         public, auth, customer, reception, manager, admin
 templates/       Jinja2-шаблоны
 static/          CSS
