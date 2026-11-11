@@ -3,7 +3,7 @@
 import os
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 import models
 from constants import ROLE_SUPERADMIN
@@ -59,8 +59,8 @@ HOTELS = [
 ]
 
 
-def seed_database(db: Session) -> None:
-    if db.scalar(select(models.Hotel.id).limit(1)) is not None:
+async def seed_database(db: AsyncSession) -> None:
+    if await db.scalar(select(models.Hotel.id).limit(1)) is not None:
         return
 
     for data in HOTELS:
@@ -81,12 +81,12 @@ def seed_database(db: Session) -> None:
                 )
             )
         db.add(hotel)
-    db.commit()
+    await db.commit()
 
 
-def seed_superadmin(db: Session) -> None:
+async def seed_superadmin(db: AsyncSession) -> None:
     """Создаёт первого суперадмина. Логин/пароль — из SUPERADMIN_EMAIL / SUPERADMIN_PASSWORD."""
-    if db.scalar(select(models.User.id).where(models.User.role == ROLE_SUPERADMIN).limit(1)):
+    if await db.scalar(select(models.User.id).where(models.User.role == ROLE_SUPERADMIN).limit(1)):
         return
     email = os.getenv("SUPERADMIN_EMAIL", "admin@hotel.local").strip().lower()
     password = os.getenv("SUPERADMIN_PASSWORD", "admin12345")
@@ -94,13 +94,13 @@ def seed_superadmin(db: Session) -> None:
         email=email, full_name="Суперадминистратор",
         password_hash=hash_password(password), role=ROLE_SUPERADMIN,
     ))
-    db.commit()
+    await db.commit()
     if "SUPERADMIN_PASSWORD" not in os.environ:
         print(f"[!] Создан суперадмин {email} с ПАРОЛЕМ ПО УМОЛЧАНИЮ — смените его "
               "(задайте SUPERADMIN_PASSWORD до первого запуска).")
 
 
-def seed_settings(db: Session) -> None:
-    if db.get(models.Setting, "commission_percent") is None:
+async def seed_settings(db: AsyncSession) -> None:
+    if await db.get(models.Setting, "commission_percent") is None:
         db.add(models.Setting(key="commission_percent", value="10"))
-        db.commit()
+        await db.commit()

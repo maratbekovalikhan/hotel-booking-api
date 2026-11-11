@@ -6,7 +6,8 @@ from urllib.parse import urlencode
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 import models
 from constants import BOOKING_STATUS_LABELS, HOUSEKEEPING_LABELS
@@ -23,14 +24,20 @@ BOOKING_OPTS = (
 )
 
 
-def hotels_list(db: Session):
-    return db.scalars(select(models.Hotel).order_by(models.Hotel.id)).all()
+async def hotels_list(db: AsyncSession):
+    return (await db.scalars(select(models.Hotel).order_by(models.Hotel.id))).all()
+
+
+async def load_booking(db: AsyncSession, booking_id: int) -> models.Booking | None:
+    return await db.scalar(
+        select(models.Booking).where(models.Booking.id == booking_id).options(*BOOKING_OPTS)
+    )
 
 
 @router.get("", response_class=HTMLResponse)
-def reception(
+async def reception(
     request: Request, hotel_id: str | None = None, status: str | None = None, page: str | None = None,
-    db: Session = Depends(get_db), user: models.User = Depends(reception_only),
+    db: AsyncSession = Depends(get_db), user: models.User = Depends(reception_only),
 ):
     today = date.today()
     hid = parse_int(hotel_id)
@@ -38,46 +45,46 @@ def reception(
     if hid:
         hconds.append(models.Booking.room_id.in_(select(models.Room.id).where(models.Room.hotel_id == hid)))
 
-    arrivals = db.scalars(
+    arrivals = (await db.scalars(
         select(models.Booking).where(
             models.Booking.status == "paid",
             models.Booking.check_in <= today, models.Booking.check_out > today, *hconds,
         ).options(*BOOKING_OPTS).order_by(models.Booking.check_in)
-    ).all()
-    in_house = db.scalars(
+    )).all()
+    in_house = (await db.scalars(
         select(models.Booking).where(models.Booking.status == "checked_in", *hconds)
         .options(*BOOKING_OPTS).order_by(models.Booking.check_out)
-    ).all()
+    )).all()
 
     all_conds = list(hconds)
     if status in BOOKING_STATUS_LABELS:
         all_conds.append(models.Booking.status == status)
-    total = db.scalar(select(func.count(models.Booking.id)).where(*all_conds))
+    total = await db.scalar(select(func.count(models.Booking.id)).where(*all_conds))
     pages = max(1, math.ceil(total / PAGE))
     current = min(max(1, parse_int(page) or 1), pages)
-    all_bookings = db.scalars(
+    all_bookings = (await db.scalars(
         select(models.Booking).where(*all_conds).options(*BOOKING_OPTS)
         .order_by(models.Booking.check_in.desc(), models.Booking.id.desc())
         .limit(PAGE).offset((current - 1) * PAGE)
-    ).all()
+    )).all()
 
     qs = urlencode({k: v for k, v in {"hotel_id": hid, "status": status if status in BOOKING_STATUS_LABELS else None}.items() if v})
-    return render(
+    return await render(
         request, "reception.html", db, user, active="reception",
         context={
             "arrivals": arrivals, "in_house": in_house, "all_bookings": all_bookings,
             "total": total, "page": current, "pages": pages, "qs": qs,
-            "hid": hid, "status": status, "hotels": hotels_list(db), "sub": "bookings",
+            "hid": hid, "status": status, "hotels": await hotels_list(db), "sub": "bookings",
         },
     )
 
 
 @router.post("/bookings/{booking_id}/check-in")
-def check_in(
+async def check_in(
     request: Request, booking_id: int, redirect_to: str = Form("/reception"),
-    db: Session = Depends(get_db), user: models.User = Depends(reception_only),
+    db: AsyncSession = Depends(get_db), user: models.User = Depends(reception_only),
 ):
-    booking = db.get(models.Booking, booking_id)
+    booking = await load_booking(db, booking_id)
     today = date.today()
     if booking is None:
         flash(request, "Бронь не найдена.", "error")
@@ -90,17 +97,17 @@ def check_in(
                        f"«{HOUSEKEEPING_LABELS[booking.room.housekeeping]}».", "error")
     else:
         booking.status = "checked_in"
-        db.commit()
+        await db.commit()
         flash(request, f"Гость {booking.user.full_name} заселён в номер {booking.room.number}.")
     return RedirectResponse(safe_redirect(redirect_to, "/reception"), status_code=303)
 
 
 @router.post("/bookings/{booking_id}/check-out")
-def check_out(
+async def check_out(
     request: Request, booking_id: int, redirect_to: str = Form("/reception"),
-    db: Session = Depends(get_db), user: models.User = Depends(reception_only),
+    db: AsyncSession = Depends(get_db), user: models.User = Depends(reception_only),
 ):
-    booking = db.get(models.Booking, booking_id)
+    booking = await load_booking(db, booking_id)
     if booking is None:
         flash(request, "Бронь не найдена.", "error")
     elif booking.status != "checked_in":
@@ -108,15 +115,15 @@ def check_out(
     else:
         booking.status = "checked_out"
         booking.room.housekeeping = "dirty"  # после выезда номер нужно убрать
-        db.commit()
+        await db.commit()
         flash(request, f"Гость выселен. Номер {booking.room.number} отмечен как «Нужна уборка».")
     return RedirectResponse(safe_redirect(redirect_to, "/reception"), status_code=303)
 
 
 @router.get("/rooms", response_class=HTMLResponse)
-def housekeeping_page(
+async def housekeeping_page(
     request: Request, hotel_id: str | None = None, hk: str | None = None, page: str | None = None,
-    db: Session = Depends(get_db), user: models.User = Depends(reception_only),
+    db: AsyncSession = Depends(get_db), user: models.User = Depends(reception_only),
 ):
     hid = parse_int(hotel_id)
     conds = []
@@ -124,34 +131,36 @@ def housekeeping_page(
         conds.append(models.Room.hotel_id == hid)
     if hk in HOUSEKEEPING_LABELS:
         conds.append(models.Room.housekeeping == hk)
-    total = db.scalar(select(func.count(models.Room.id)).where(*conds))
+    total = await db.scalar(select(func.count(models.Room.id)).where(*conds))
     pages = max(1, math.ceil(total / ROOMS_PAGE))
     current = min(max(1, parse_int(page) or 1), pages)
-    rooms = db.scalars(
+    rooms = (await db.scalars(
         select(models.Room).where(*conds).options(joinedload(models.Room.hotel))
         .order_by(models.Room.hotel_id, models.Room.number)
         .limit(ROOMS_PAGE).offset((current - 1) * ROOMS_PAGE)
-    ).all()
-    occupied = set(db.scalars(select(models.Booking.room_id).where(models.Booking.status == "checked_in")))
+    )).all()
+    occupied = set((await db.scalars(
+        select(models.Booking.room_id).where(models.Booking.status == "checked_in")
+    )).all())
     qs = urlencode({k: v for k, v in {"hotel_id": hid, "hk": hk if hk in HOUSEKEEPING_LABELS else None}.items() if v})
-    return render(
+    return await render(
         request, "reception_rooms.html", db, user, active="reception",
         context={"rooms": rooms, "occupied": occupied, "total": total, "page": current,
                  "pages": pages, "qs": qs, "hid": hid, "hk": hk,
-                 "hotels": hotels_list(db), "sub": "rooms"},
+                 "hotels": await hotels_list(db), "sub": "rooms"},
     )
 
 
 @router.post("/rooms/{room_id}/housekeeping")
-def set_housekeeping(
+async def set_housekeeping(
     request: Request, room_id: int, status: str = Form(...), redirect_to: str = Form("/reception/rooms"),
-    db: Session = Depends(get_db), user: models.User = Depends(reception_only),
+    db: AsyncSession = Depends(get_db), user: models.User = Depends(reception_only),
 ):
-    room = db.get(models.Room, room_id)
+    room = await db.get(models.Room, room_id)
     if room is None or status not in HOUSEKEEPING_LABELS:
         flash(request, "Некорректный запрос.", "error")
     else:
         room.housekeeping = status
-        db.commit()
+        await db.commit()
         flash(request, f"Номер {room.number}: статус — «{HOUSEKEEPING_LABELS[status]}».")
     return RedirectResponse(safe_redirect(redirect_to, "/reception/rooms"), status_code=303)

@@ -4,7 +4,7 @@ from pathlib import Path
 from fastapi import Depends, Request
 from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 import models
 from constants import (
@@ -81,11 +81,11 @@ def parse_date(value: str | None) -> date | None:
 
 # ---------- пользователь и права ----------
 
-def get_current_user(request: Request, db: Session = Depends(get_db)) -> models.User | None:
+async def get_current_user(request: Request, db: AsyncSession = Depends(get_db)) -> models.User | None:
     user_id = request.session.get("user_id")
     if not user_id:
         return None
-    user = db.get(models.User, user_id)
+    user = await db.get(models.User, user_id)
     if user is None or user.is_blocked:
         request.session.clear()  # заблокированного пользователя сразу «выкидываем»
         return None
@@ -122,10 +122,10 @@ def has_perm(user: models.User, perm: str) -> bool:
 
 # ---------- рендер ----------
 
-def render(
+async def render(
     request: Request,
     name: str,
-    db: Session,
+    db: AsyncSession,
     user: models.User | None,
     context: dict | None = None,
     active: str = "",
@@ -136,9 +136,9 @@ def render(
         "active": active,
         "flash": request.session.pop("flash", None),
         "contacts": CONTACTS,
-        "footer_hotels": db.scalars(
+        "footer_hotels": (await db.scalars(
             select(models.Hotel).where(models.Hotel.status == "approved").order_by(models.Hotel.id)
-        ).all(),
+        )).all(),
         "today": date.today().isoformat(),
         "today_date": date.today(),
         "back": current_path(request),
