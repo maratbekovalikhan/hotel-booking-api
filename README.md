@@ -1,6 +1,6 @@
 # Hotel Booking
 
-FastAPI + SQLAlchemy + SQLite + Jinja2. Сеть из 3 отелей и 197 номеров (демо-данные), система ролей.
+FastAPI + SQLAlchemy + PostgreSQL + Jinja2. Сеть из 3 отелей и 197 номеров (демо-данные), система ролей.
 
 ## Запуск
 
