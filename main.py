@@ -10,7 +10,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from database import IS_POSTGRES, AsyncSessionLocal, Base, engine
 from deps import BASE_DIR, Forbidden, NotAuthenticated, flash
-from routers import admin, auth, customer, manager, public, reception
+from routers import admin, auth, customer, manager, photos, public, reception
 from seed import seed_database, seed_settings, seed_superadmin
 
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-change-me")
@@ -54,5 +54,6 @@ async def forbidden_handler(request: Request, exc: Forbidden):
     return RedirectResponse("/", status_code=303)
 
 
-for r in (public.router, auth.router, customer.router, reception.router, manager.router, admin.router):
+for r in (public.router, auth.router, customer.router, reception.router,
+          manager.router, photos.router, admin.router):
     app.include_router(r)

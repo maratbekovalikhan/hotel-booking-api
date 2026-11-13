@@ -10,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload, selectinload
 
 import models
-from constants import ROLE_CUSTOMER
+from constants import ACTIVE_BOOKING_STATUSES, ROLE_CUSTOMER
 from database import get_db
 from deps import customer_only, flash, render, require_user, safe_redirect
 from security import ahash_password, averify_password
@@ -35,19 +35,34 @@ async def own_booking(db: AsyncSession, booking_id: int, user: models.User) -> m
     )
 
 
-@router.get("/account", response_class=HTMLResponse)
-async def account(
+@router.get("/account")
+async def account(user: models.User = Depends(require_user)):
+    """Старый адрес: клиента ведём в «Мои брони», сотрудников — в профиль."""
+    return RedirectResponse("/my-bookings" if user.role == ROLE_CUSTOMER else "/profile", status_code=303)
+
+
+@router.get("/my-bookings", response_class=HTMLResponse)
+async def my_bookings(
+    request: Request, db: AsyncSession = Depends(get_db), user: models.User = Depends(customer_only),
+):
+    bookings = (await db.scalars(
+        select(models.Booking).where(models.Booking.user_id == user.id)
+        .options(*BOOKING_LOAD)
+        .order_by(models.Booking.check_in)
+    )).all()
+    today = date.today()
+    upcoming = [b for b in bookings if b.status in ACTIVE_BOOKING_STATUSES and b.check_out >= today]
+    upcoming_ids = {b.id for b in upcoming}
+    history = [b for b in reversed(bookings) if b.id not in upcoming_ids]  # новые сверху
+    return await render(request, "my_bookings.html", db, user, active="bookings",
+                        context={"upcoming": upcoming, "history": history})
+
+
+@router.get("/profile", response_class=HTMLResponse)
+async def profile(
     request: Request, db: AsyncSession = Depends(get_db), user: models.User = Depends(require_user),
 ):
-    bookings = []
-    if user.role == ROLE_CUSTOMER:
-        bookings = (await db.scalars(
-            select(models.Booking).where(models.Booking.user_id == user.id)
-            .options(*BOOKING_LOAD)
-            .order_by(models.Booking.check_in.desc())
-        )).all()
-    return await render(request, "account.html", db, user, active="account",
-                        context={"bookings": bookings})
+    return await render(request, "profile.html", db, user, active="profile")
 
 
 @router.post("/book")
@@ -74,7 +89,7 @@ async def book(
         return RedirectResponse(target, status_code=303)
 
     flash(request, f"Номер {room.number} ({room.hotel.name}) забронирован. Оплатите бронь, чтобы подтвердить её.")
-    return RedirectResponse("/account", status_code=303)
+    return RedirectResponse("/my-bookings", status_code=303)
 
 
 @router.post("/bookings/{booking_id}/pay")
@@ -94,7 +109,7 @@ async def pay(
         booking.status = "paid"
         await db.commit()
         flash(request, f"Оплата прошла успешно (демо): {amount} ₸.")
-    return RedirectResponse("/account", status_code=303)
+    return RedirectResponse("/my-bookings", status_code=303)
 
 
 @router.post("/bookings/{booking_id}/cancel")
@@ -113,7 +128,7 @@ async def cancel(
         await db.commit()
         flash(request, "Бронь отменена. Возврат оплаты оформит менеджер платформы." if paid
               else "Бронь отменена.")
-    return RedirectResponse("/account", status_code=303)
+    return RedirectResponse("/my-bookings", status_code=303)
 
 
 @router.post("/bookings/{booking_id}/review")
@@ -137,7 +152,7 @@ async def review(
                              hotel_id=booking.room.hotel_id, rating=rating, text=text))
         await db.commit()
         flash(request, "Спасибо за отзыв!")
-    return RedirectResponse("/account", status_code=303)
+    return RedirectResponse("/my-bookings", status_code=303)
 
 
 @router.post("/bookings/{booking_id}/dispute")
@@ -157,7 +172,7 @@ async def dispute(
         db.add(models.Dispute(booking_id=booking.id, user_id=user.id, message=message))
         await db.commit()
         flash(request, "Обращение отправлено менеджеру платформы.")
-    return RedirectResponse("/account", status_code=303)
+    return RedirectResponse("/my-bookings", status_code=303)
 
 
 @router.post("/account/profile")
@@ -172,7 +187,7 @@ async def update_profile(
         user.full_name = full_name
         await db.commit()
         flash(request, "Профиль обновлён.")
-    return RedirectResponse("/account", status_code=303)
+    return RedirectResponse("/profile", status_code=303)
 
 
 @router.post("/account/password")
@@ -191,4 +206,4 @@ async def change_password(
         user.password_hash = await ahash_password(new_password)
         await db.commit()
         flash(request, "Пароль изменён.")
-    return RedirectResponse("/account", status_code=303)
+    return RedirectResponse("/profile", status_code=303)

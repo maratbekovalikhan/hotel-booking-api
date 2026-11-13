@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% from "_macros.html" import pager %}
+{% block title %}Фото — Менеджер{% endblock %}
+{% block content %}
+<h1>Менеджер платформы</h1>
+{% include "_manager_nav.html" %}
+
+{% if not storage_ok %}
+<div class="alert alert-error">Хранилище не настроено: задайте <code>SUPABASE_URL</code> и <code>SUPABASE_SERVICE_ROLE_KEY</code> в <code>.env</code> и перезапустите сервер.</div>
+{% endif %}
+
+<form method="get" action="/manager/photos" class="card form-row" style="margin-bottom:1.5rem">
+  <label>Отель
+    <select name="hotel_id">{% for h in hotels %}<option value="{{ h.id }}" {{ 'selected' if hotel and hotel.id == h.id }}>{{ h.name }}</option>{% endfor %}</select>
+  </label>
+  <button class="btn" type="submit">Показать</button>
+</form>
+<p class="muted">Форматы: JPG, PNG, WEBP · до {{ max_mb }} МБ на файл · не более {{ max_photos }} фото на отель или номер. Первое фото показывается на карточке.</p>
+
+{% if hotel %}
+<h2 class="section-title">Фото отеля «{{ hotel.name }}» ({{ hotel_photos|length }}/{{ max_photos }})</h2>
+<div class="thumbs">
+  {% for p in hotel_photos %}
+  <div class="thumb">
+    <img src="{{ p.url }}" alt="" loading="lazy">
+    <form method="post" action="/manager/photos/{{ p.id }}/delete" onsubmit="return confirm('Удалить фото?')">
+      <input type="hidden" name="redirect_to" value="{{ back }}">
+      <button class="thumb-del" type="submit" title="Удалить">✕</button>
+    </form>
+  </div>
+  {% else %}<span class="muted">Фото пока нет.</span>{% endfor %}
+</div>
+<form method="post" action="/manager/photos/hotel/{{ hotel.id }}" enctype="multipart/form-data" class="inline-form" style="margin-top:.75rem">
+  <input type="hidden" name="redirect_to" value="{{ back }}">
+  <input type="file" name="files" accept="image/jpeg,image/png,image/webp" multiple required>
+  <button class="btn btn-sm" type="submit">Загрузить фото отеля</button>
+</form>
+
+<h2 class="section-title">Номера отеля ({{ total }})</h2>
+<div class="table-wrap"><table>
+  <tr><th>№</th><th>Тип</th><th>Фото ({{ max_photos }} макс.)</th><th>Загрузить</th></tr>
+  {% for r in rooms %}
+  <tr>
+    <td>{{ r.number }}</td>
+    <td>{{ r.name }}</td>
+    <td>
+      <div class="thumbs">
+        {% for p in r.photos %}
+        <div class="thumb thumb-sm">
+          <img src="{{ p.url }}" alt="" loading="lazy">
+          <form method="post" action="/manager/photos/{{ p.id }}/delete" onsubmit="return confirm('Удалить фото?')">
+            <input type="hidden" name="redirect_to" value="{{ back }}">
+            <button class="thumb-del" type="submit" title="Удалить">✕</button>
+          </form>
+        </div>
+        {% else %}<span class="muted">—</span>{% endfor %}
+      </div>
+    </td>
+    <td>
+      <form method="post" action="/manager/photos/room/{{ r.id }}" enctype="multipart/form-data" class="inline-form">
+        <input type="hidden" name="redirect_to" value="{{ back }}">
+        <input type="file" name="files" accept="image/jpeg,image/png,image/webp" multiple required>
+        <button class="btn btn-sm" type="submit">Загрузить</button>
+      </form>
+    </td>
+  </tr>
+  {% endfor %}
+</table></div>
+{{ pager(page, pages, "/manager/photos", qs) }}
+{% else %}
+<p class="muted">Отелей пока нет.</p>
+{% endif %}
+{% endblock %}

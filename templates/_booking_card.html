@@ -1,0 +1,55 @@
+{% from "_macros.html" import status_badge %}
+<article class="card" style="margin-bottom:1rem">
+  <div class="booking-head">
+    <div>
+      <b>{{ b.room.hotel.name }}</b> · № {{ b.room.number }} · {{ b.room.name }}<br>
+      <span class="muted">{{ b.check_in.strftime("%d.%m.%Y") }} — {{ b.check_out.strftime("%d.%m.%Y") }} · ночей: {{ b.nights }} · {{ b.total_price|money }} ₸</span>
+    </div>
+    <div>{{ status_badge(b.status) }}
+      {% if b.payment and b.payment.status == 'refunded' %}<span class="st st-refunded">Возврат оформлен</span>{% endif %}
+    </div>
+  </div>
+
+  {% if b.status in ('pending', 'paid', 'checked_in') and b.days_left >= 0 %}
+  <div class="countdown">
+    {% if b.days_to_checkin > 0 %}🗓 До заезда: <b>{{ b.days_to_checkin }} дн.</b> &nbsp;·&nbsp; {% endif %}
+    ⏳ До выезда: <b>{% if b.days_left == 0 %}сегодня{% else %}{{ b.days_left }} дн.{% endif %}</b>
+  </div>
+  {% endif %}
+
+  <div class="actions">
+    {% if b.can_pay %}
+    <form method="post" action="/bookings/{{ b.id }}/pay"><button class="btn btn-sm" type="submit">Оплатить {{ b.total_price|money }} ₸ (демо)</button></form>
+    {% endif %}
+    {% if b.can_cancel %}
+    <form method="post" action="/bookings/{{ b.id }}/cancel"><button class="btn btn-sm btn-danger" type="submit">Отменить</button></form>
+    {% endif %}
+  </div>
+
+  {% if b.can_review %}
+  <details class="inline-details"><summary>Оставить отзыв</summary>
+    <form method="post" action="/bookings/{{ b.id }}/review" class="stack">
+      <label>Оценка
+        <select name="rating">{% for n in (5, 4, 3, 2, 1) %}<option value="{{ n }}">{{ n }} {{ "★" * n }}</option>{% endfor %}</select>
+      </label>
+      <label>Отзыв <textarea name="text" rows="3" minlength="5" maxlength="1000" required></textarea></label>
+      <button class="btn btn-sm" type="submit">Отправить</button>
+    </form>
+  </details>
+  {% elif b.review %}
+  <p class="muted" style="margin:.5rem 0 0">Ваш отзыв: {{ "★" * b.review.rating }} — {{ b.review.text }}</p>
+  {% endif %}
+
+  {% if b.status != 'cancelled' or (b.payment and b.payment.status == 'paid') %}
+    {% if b.has_open_dispute %}
+      <p class="muted" style="margin:.5rem 0 0">⏳ Обращение в поддержку рассматривается менеджером.</p>
+    {% else %}
+    <details class="inline-details"><summary>Возникла проблема? Написать в поддержку</summary>
+      <form method="post" action="/bookings/{{ b.id }}/dispute" class="stack">
+        <label>Опишите ситуацию <textarea name="message" rows="3" minlength="10" maxlength="2000" required></textarea></label>
+        <button class="btn btn-sm" type="submit">Отправить менеджеру</button>
+      </form>
+    </details>
+    {% endif %}
+  {% endif %}
+</article>

@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 
 import models
 from database import get_db
@@ -27,7 +27,8 @@ SORTS = {
 
 async def approved_hotels(db: AsyncSession):
     return (await db.scalars(
-        select(models.Hotel).where(models.Hotel.status == "approved").order_by(models.Hotel.id)
+        select(models.Hotel).where(models.Hotel.status == "approved")
+        .options(selectinload(models.Hotel.photos)).order_by(models.Hotel.id)
     )).all()
 
 
@@ -65,7 +66,7 @@ async def index(
             total = await db.scalar(select(func.count(models.Room.id)).where(*conds))
             rooms = (await db.scalars(
                 select(models.Room).where(*conds)
-                .options(joinedload(models.Room.hotel))
+                .options(joinedload(models.Room.hotel), selectinload(models.Room.photos))
                 .order_by(models.Room.price_per_night, models.Room.hotel_id, models.Room.number)
                 .limit(SEARCH_LIMIT)
             )).all()
@@ -115,7 +116,7 @@ async def rooms_page(
     current = min(max(1, parse_int(page) or 1), pages)
     rooms = (await db.scalars(
         select(models.Room).where(*conds)
-        .options(joinedload(models.Room.hotel))
+        .options(joinedload(models.Room.hotel), selectinload(models.Room.photos))
         .order_by(*order).limit(PAGE_SIZE).offset((current - 1) * PAGE_SIZE)
     )).all()
 
@@ -168,7 +169,9 @@ async def hotel_detail(
     db: AsyncSession = Depends(get_db),
     user: models.User | None = Depends(get_current_user),
 ):
-    hotel = await db.get(models.Hotel, hotel_id)
+    hotel = await db.scalar(
+        select(models.Hotel).where(models.Hotel.id == hotel_id).options(selectinload(models.Hotel.photos))
+    )
     if hotel is None or hotel.status != "approved":
         flash(request, "Отель не найден.", "error")
         return RedirectResponse("/hotels", status_code=303)

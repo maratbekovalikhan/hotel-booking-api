@@ -14,6 +14,7 @@
       <a href="/" class="{{ 'active' if active == 'home' }}">Главное</a>
       <a href="/hotels" class="{{ 'active' if active == 'hotels' }}">Отели</a>
       <a href="/rooms" class="{{ 'active' if active == 'rooms' }}">Номера</a>
+      {% if user and user.role == 'customer' %}<a href="/my-bookings" class="{{ 'active' if active == 'bookings' }}">Мои брони</a>{% endif %}
       <a href="/about" class="{{ 'active' if active == 'about' }}">О нас</a>
       {% if user and user.role in ('receptionist', 'superadmin') %}<a href="/reception" class="staff {{ 'active' if active == 'reception' }}">Ресепшен</a>{% endif %}
       {% if user and user.role in ('manager', 'superadmin') %}<a href="/manager" class="staff {{ 'active' if active == 'manager' }}">Менеджер</a>{% endif %}
@@ -21,7 +22,7 @@
     </nav>
     <div class="auth">
       {% if user %}
-        <a href="/account" class="{{ 'active' if active == 'account' }}">👤 {{ user.full_name }}
+        <a href="/profile" class="{{ 'active' if active == 'profile' }}" title="Профиль">👤 {{ user.full_name }}
           {% if user.role != 'customer' %}<span class="role-badge">{{ ROLE_LABELS[user.role] }}</span>{% endif %}</a>
         <form method="post" action="/logout"><button class="btn btn-ghost" type="submit">Выйти</button></form>
       {% else %}

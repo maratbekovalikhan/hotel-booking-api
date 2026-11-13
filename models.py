@@ -57,6 +57,9 @@ class Hotel(Base):
     reviews: Mapped[list["Review"]] = relationship(
         back_populates="hotel", cascade="all, delete-orphan"
     )
+    photos: Mapped[list["Photo"]] = relationship(
+        back_populates="hotel", cascade="all", order_by="Photo.id"
+    )
 
     @property
     def amenity_list(self) -> list[str]:
@@ -84,6 +87,9 @@ class Room(Base):
     )
     blocks: Mapped[list["RoomBlock"]] = relationship(
         back_populates="room", cascade="all, delete-orphan"
+    )
+    photos: Mapped[list["Photo"]] = relationship(
+        back_populates="room", cascade="all", order_by="Photo.id"
     )
 
 
@@ -119,6 +125,11 @@ class Booking(Base):
     @property
     def total_price(self) -> int:
         return self.nights * self.room.price_per_night
+
+    @property
+    def days_to_checkin(self) -> int:
+        """Сколько дней осталось до заезда (отрицательное — заезд уже был)."""
+        return (self.check_in - date.today()).days
 
     @property
     def days_left(self) -> int:
@@ -218,3 +229,25 @@ class Setting(Base):
 
     key: Mapped[str] = mapped_column(String(50), primary_key=True)
     value: Mapped[str] = mapped_column(String(255))
+
+
+class Photo(Base):
+    """Фото отеля ИЛИ номера (ровно одно из hotel_id / room_id). Файл лежит в Supabase Storage."""
+    __tablename__ = "photos"
+    __table_args__ = (
+        CheckConstraint(
+            "(hotel_id IS NOT NULL AND room_id IS NULL) OR (hotel_id IS NULL AND room_id IS NOT NULL)",
+            name="ck_photo_target",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    hotel_id: Mapped[Optional[int]] = mapped_column(ForeignKey("hotels.id"), nullable=True, index=True)
+    room_id: Mapped[Optional[int]] = mapped_column(ForeignKey("rooms.id"), nullable=True, index=True)
+    storage_path: Mapped[str] = mapped_column(String(255))
+    url: Mapped[str] = mapped_column(String(500))
+    uploaded_by: Mapped[str] = mapped_column(String(100))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
+
+    hotel: Mapped[Optional[Hotel]] = relationship(back_populates="photos")
+    room: Mapped[Optional[Room]] = relationship(back_populates="photos")
