@@ -1,4 +1,6 @@
+{% from "_macros.html" import cover %}
 <article class="card room-card">
+  {{ cover(room.photos, "🛏", room.name) }}
   <div class="room-top">
     <span class="badge">№ {{ room.number }}</span>
     <span class="muted">{{ room.hotel.name }}</span>

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Профиль — Hotel Booking{% endblock %}
+{% block content %}
+<h1>Профиль</h1>
+<p class="muted">{{ user.full_name }} · {{ user.email }} · {{ ROLE_LABELS[user.role] }}</p>
+{% if user.role == 'customer' %}<p><a href="/my-bookings">→ Мои брони</a></p>{% endif %}
+
+<div class="grid grid-3">
+  <form method="post" action="/account/profile" class="card stack">
+    <h3>Смена имени</h3>
+    <label>Имя <input type="text" name="full_name" value="{{ user.full_name }}" required></label>
+    <button class="btn btn-sm" type="submit">Сохранить</button>
+  </form>
+  <form method="post" action="/account/password" class="card stack">
+    <h3>Смена пароля</h3>
+    <label>Текущий пароль <input type="password" name="old_password" required></label>
+    <label>Новый пароль <input type="password" name="new_password" minlength="6" required></label>
+    <label>Повторите новый <input type="password" name="new_password2" minlength="6" required></label>
+    <button class="btn btn-sm" type="submit">Изменить пароль</button>
+  </form>
+</div>
+{% endblock %}

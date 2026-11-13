@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import stars %}
+{% from "_macros.html" import stars, cover %}
 {% block title %}Главное — Hotel Booking{% endblock %}
 {% block content %}
 <section class="hero">
@@ -37,6 +37,7 @@
 <div class="grid grid-3">
   {% for h in hotels %}
   <article class="card">
+    {{ cover(h.photos, "🏨", h.name) }}
     <div>{{ stars(h.stars) }}</div>
     <h3><a href="/hotels/{{ h.id }}" style="text-decoration:none">{{ h.name }}</a></h3>
     {% if ratings.get(h.id) %}<p class="muted" style="margin:0">⭐ {{ ratings[h.id][0] }} · отзывов: {{ ratings[h.id][1] }}</p>{% endif %}

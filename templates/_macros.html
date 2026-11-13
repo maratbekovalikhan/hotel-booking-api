@@ -51,3 +51,8 @@
   {% endfor %}
 </table></div>
 {% endmacro %}
+
+{% macro cover(photos, icon, alt) %}
+{% if photos %}<img class="card-img" src="{{ photos[0].url }}" alt="{{ alt }}" loading="lazy">
+{% else %}<div class="card-img placeholder">{{ icon }}</div>{% endif %}
+{% endmacro %}

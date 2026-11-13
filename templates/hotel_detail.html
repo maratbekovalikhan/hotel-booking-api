@@ -3,6 +3,11 @@
 {% block title %}{{ hotel.name }} — Hotel Booking{% endblock %}
 {% block content %}
 <p><a href="/hotels">← Все отели</a></p>
+{% if hotel.photos %}
+<div class="gallery">
+  {% for ph in hotel.photos %}<a href="{{ ph.url }}" target="_blank" rel="noopener"><img src="{{ ph.url }}" alt="{{ hotel.name }}" loading="lazy"></a>{% endfor %}
+</div>
+{% endif %}
 <section class="card">
   <div>{{ stars(hotel.stars) }}</div>
   <h1 style="margin:.25rem 0">{{ hotel.name }}</h1>

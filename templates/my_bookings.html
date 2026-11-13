@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Мои брони — Hotel Booking{% endblock %}
+{% block content %}
+<h1>Мои брони</h1>
+<p class="muted">Предстоящих и текущих: {{ upcoming|length }} · в истории: {{ history|length }}</p>
+
+<h2 class="section-title">Предстоящие и текущие</h2>
+{% for b in upcoming %}{% include "_booking_card.html" %}
+{% else %}
+<p class="muted">Активных броней нет. <a href="/">Найти свободный номер</a></p>
+{% endfor %}
+
+{% if history %}
+<h2 class="section-title">История</h2>
+{% for b in history %}{% include "_booking_card.html" %}{% endfor %}
+{% endif %}
+{% endblock %}

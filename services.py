@@ -2,11 +2,12 @@ import re
 from datetime import date
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 import models
 from constants import ACTIVE_BOOKING_STATUSES, ROLE_CUSTOMER
-from security import hash_password
+from security import ahash_password
 
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 MAX_NIGHTS = 30
@@ -50,10 +51,14 @@ def availability_conditions(check_in: date, check_out: date, hotel_id=None, gues
     return conds
 
 
-def validate_booking(
-    db: Session, room_id: int, check_in: date, check_out: date
+async def validate_booking(
+    db: AsyncSession, room_id: int, check_in: date, check_out: date
 ) -> tuple[models.Room | None, str | None]:
-    room = db.get(models.Room, room_id)
+    """Дружелюбная проверка перед вставкой. Окончательную защиту от двойного
+    бронирования даёт ограничение bookings_no_overlap в PostgreSQL (миграция 0002)."""
+    room = await db.scalar(
+        select(models.Room).where(models.Room.id == room_id).options(joinedload(models.Room.hotel))
+    )
     if room is None or room.hotel.status != "approved":
         return None, "Такого номера не существует."
 
@@ -61,13 +66,13 @@ def validate_booking(
     if error:
         return None, error
 
-    conflict = db.scalar(
+    conflict = await db.scalar(
         select(models.Booking).where(
             models.Booking.room_id == room.id,
             models.Booking.status.in_(ACTIVE_BOOKING_STATUSES),
             models.Booking.check_in < check_out,
             models.Booking.check_out > check_in,
-        )
+        ).limit(1)
     )
     if conflict:
         return None, (
@@ -75,51 +80,51 @@ def validate_booking(
             f"{conflict.check_in:%d.%m.%Y} по {conflict.check_out:%d.%m.%Y}."
         )
 
-    block = db.scalar(
+    block = await db.scalar(
         select(models.RoomBlock).where(
             models.RoomBlock.room_id == room.id,
             models.RoomBlock.date_from < check_out,
             models.RoomBlock.date_to > check_in,
-        )
+        ).limit(1)
     )
     if block:
         return None, f"Номер {room.number} временно недоступен в выбранные даты."
     return room, None
 
 
-def validate_new_user(db: Session, full_name: str, email: str, password: str) -> str | None:
+async def validate_new_user(db: AsyncSession, full_name: str, email: str, password: str) -> str | None:
     if len(full_name) < 2:
         return "Введите имя (минимум 2 символа)."
     if not EMAIL_RE.match(email):
         return "Введите корректный email."
     if len(password) < 6:
         return "Пароль должен быть не короче 6 символов."
-    if db.scalar(select(models.User.id).where(models.User.email == email)):
+    if await db.scalar(select(models.User.id).where(models.User.email == email)):
         return "Пользователь с таким email уже зарегистрирован."
     return None
 
 
-def create_user(
-    db: Session, full_name: str, email: str, password: str, role: str = ROLE_CUSTOMER, **extra
+async def create_user(
+    db: AsyncSession, full_name: str, email: str, password: str, role: str = ROLE_CUSTOMER, **extra
 ) -> models.User:
     user = models.User(
-        email=email, full_name=full_name, password_hash=hash_password(password),
+        email=email, full_name=full_name, password_hash=await ahash_password(password),
         role=role, **extra,
     )
     db.add(user)
-    db.commit()
+    await db.commit()
     return user
 
 
-def get_setting(db: Session, key: str, default: str) -> str:
-    row = db.get(models.Setting, key)
+async def get_setting(db: AsyncSession, key: str, default: str) -> str:
+    row = await db.get(models.Setting, key)
     return row.value if row else default
 
 
-def set_setting(db: Session, key: str, value: str) -> None:
-    row = db.get(models.Setting, key)
+async def set_setting(db: AsyncSession, key: str, value: str) -> None:
+    row = await db.get(models.Setting, key)
     if row:
         row.value = value
     else:
         db.add(models.Setting(key=key, value=value))
-    db.commit()
+    await db.commit()
