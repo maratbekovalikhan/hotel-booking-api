@@ -1,43 +1,48 @@
 {% from "_macros.html" import cover %}
-<article class="card room-card">
-  {{ cover(room.photos, "🛏", room.name) }}
-  <div class="room-top">
-    <span class="badge">№ {{ room.number }}</span>
-    <span class="muted">{{ room.hotel.name }}</span>
+<article class="card room-card stay-card">
+  <div class="media-frame">
+    {{ cover(room.photos, "🛏", room.name) }}
+    <span class="float-badge">№ {{ room.number }}</span>
   </div>
-  <h3>{{ room.name }}</h3>
-  <p class="muted">{{ room.description }}</p>
-  <ul class="specs">
-    <li>🛏 Комнат: {{ room.rooms_count }}</li>
-    <li>👥 До {{ room.capacity }} гостей</li>
-  </ul>
-  <div class="room-bottom">
-    <div class="price">{{ room.price_per_night|money }} ₸ <small>/ ночь</small></div>
-    {% if user and user.role == 'customer' %}
-      {% if ci and co %}
-        <form method="post" action="/book">
-          <input type="hidden" name="room_id" value="{{ room.id }}">
-          <input type="hidden" name="check_in" value="{{ ci }}">
-          <input type="hidden" name="check_out" value="{{ co }}">
-          <input type="hidden" name="redirect_to" value="{{ back }}">
-          <button class="btn" type="submit" style="width:100%">Забронировать</button>
-        </form>
-      {% else %}
-        <details class="book-details">
-          <summary class="btn">Забронировать</summary>
+  <div class="card-body">
+    <div class="room-top">
+      <span class="badge">{{ room.hotel.city }}</span>
+      <span class="muted">{{ room.hotel.name }}</span>
+    </div>
+    <h3>{{ room.name }}</h3>
+    <p class="muted excerpt">{{ room.description }}</p>
+    <ul class="specs">
+      <li>Комнат: {{ room.rooms_count }}</li>
+      <li>До {{ room.capacity }} гостей</li>
+    </ul>
+    <div class="room-bottom">
+      <div class="price">{{ room.price_per_night|money }} ₸ <small>/ ночь</small></div>
+      {% if user and user.role == 'customer' %}
+        {% if ci and co %}
           <form method="post" action="/book">
             <input type="hidden" name="room_id" value="{{ room.id }}">
+            <input type="hidden" name="check_in" value="{{ ci }}">
+            <input type="hidden" name="check_out" value="{{ co }}">
             <input type="hidden" name="redirect_to" value="{{ back }}">
-            <label>Заезд <input type="date" name="check_in" min="{{ today }}" required></label>
-            <label>Выезд <input type="date" name="check_out" min="{{ today }}" required></label>
-            <button class="btn" type="submit">Подтвердить</button>
+            <button class="btn full" type="submit">Забронировать</button>
           </form>
-        </details>
+        {% else %}
+          <details class="book-details">
+            <summary class="btn full">Забронировать</summary>
+            <form method="post" action="/book">
+              <input type="hidden" name="room_id" value="{{ room.id }}">
+              <input type="hidden" name="redirect_to" value="{{ back }}">
+              <label>Заезд <input type="date" name="check_in" min="{{ today }}" required></label>
+              <label>Выезд <input type="date" name="check_out" min="{{ today }}" required></label>
+              <button class="btn" type="submit">Подтвердить</button>
+            </form>
+          </details>
+        {% endif %}
+      {% elif user %}
+        <p class="muted" style="text-align:center;margin:0">Бронирование доступно клиентам</p>
+      {% else %}
+        <a class="btn btn-ghost full" href="/login?next={{ request.url.path }}">Войдите, чтобы забронировать</a>
       {% endif %}
-    {% elif user %}
-      <p class="muted" style="text-align:center;margin:0">Бронирование доступно клиентам</p>
-    {% else %}
-      <a class="btn btn-ghost" style="display:block;text-align:center" href="/login?next={{ request.url.path }}">Войдите, чтобы забронировать</a>
-    {% endif %}
+    </div>
   </div>
 </article>

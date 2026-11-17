@@ -2,13 +2,21 @@
 {% from "_macros.html" import stars %}
 {% block title %}{{ hotel.name }} — Hotel Booking{% endblock %}
 {% block content %}
-<p><a href="/hotels">← Все отели</a></p>
-{% if hotel.photos %}
+<p><a class="back-link" href="/hotels">← Все отели</a></p>
 <div class="gallery">
-  {% for ph in hotel.photos %}<a href="{{ ph.url }}" target="_blank" rel="noopener"><img src="{{ ph.url }}" alt="{{ hotel.name }}" loading="lazy"></a>{% endfor %}
+  {% if hotel.photos %}
+    {% for ph in hotel.photos %}
+    <a href="{{ ph.url }}" target="_blank" rel="noopener">
+      <img src="{{ ph.url }}" alt="{{ hotel.name }}" loading="lazy"
+           onerror="this.hidden=true; this.nextElementSibling.hidden=false;">
+      <span class="card-img placeholder" hidden>🏨<span>Фото недоступно</span></span>
+    </a>
+    {% endfor %}
+  {% else %}
+    <div class="card-img placeholder">🏨<span>Фотографии отеля скоро появятся</span></div>
+  {% endif %}
 </div>
-{% endif %}
-<section class="card">
+<section class="card hotel-summary">
   <div>{{ stars(hotel.stars) }}</div>
   <h1 style="margin:.25rem 0">{{ hotel.name }}</h1>
   <p class="muted">📍 {{ hotel.city }}, {{ hotel.address }} · 📞 {{ hotel.phone }} · ✉️ {{ hotel.email }}</p>

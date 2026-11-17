@@ -3,19 +3,42 @@
 {% block title %}Главное — Hotel Booking{% endblock %}
 {% block content %}
 <section class="hero">
+  <p class="eyebrow">Бутик-отели</p>
   <h1>Найдите свободный номер</h1>
   <p>Выберите даты — мы покажем доступные номера во всех наших отелях.</p>
-  <form method="get" action="/" class="form-row">
-    <label>Отель
-      <select name="hotel_id">
-        <option value="">Любой</option>
-        {% for h in hotels %}<option value="{{ h.id }}" {{ 'selected' if hid == h.id }}>{{ h.name }}</option>{% endfor %}
-      </select>
+  <form method="get" action="/" class="search-panel">
+    <label class="search-field">
+      <span class="search-label">Отель</span>
+      <span class="search-control">
+        <svg class="search-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 20V9.5L12 4l8 5.5V20" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 20v-6h6v6" stroke="currentColor" stroke-width="1.8"/></svg>
+        <select name="hotel_id">
+          <option value="">Любой</option>
+          {% for h in hotels %}<option value="{{ h.id }}" {{ 'selected' if hid == h.id }}>{{ h.name }}</option>{% endfor %}
+        </select>
+      </span>
     </label>
-    <label>Заезд <input type="date" name="check_in" min="{{ today }}" value="{{ ci }}" required></label>
-    <label>Выезд <input type="date" name="check_out" min="{{ today }}" value="{{ co }}" required></label>
-    <label>Гостей <input type="number" name="guests" min="1" max="10" value="{{ guests }}" placeholder="Любое" style="width:100px"></label>
-    <button class="btn" type="submit">Найти</button>
+    <label class="search-field">
+      <span class="search-label">Заезд</span>
+      <span class="search-control">
+        <svg class="search-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 3.5V7M16 3.5V7M4 10h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <input type="date" name="check_in" min="{{ today }}" value="{{ ci }}" required>
+      </span>
+    </label>
+    <label class="search-field">
+      <span class="search-label">Выезд</span>
+      <span class="search-control">
+        <svg class="search-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 3.5V7M16 3.5V7M4 10h16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <input type="date" name="check_out" min="{{ today }}" value="{{ co }}" required>
+      </span>
+    </label>
+    <label class="search-field">
+      <span class="search-label">Гостей</span>
+      <span class="search-control">
+        <svg class="search-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="9" cy="8" r="3" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 19c.6-3 2.8-4.5 5.5-4.5S14.4 16 15 19" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="17" cy="9" r="2.2" stroke="currentColor" stroke-width="1.6"/><path d="M16.2 14.6c2.2.2 3.7 1.4 4.3 4.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <input type="number" name="guests" min="1" max="10" value="{{ guests }}" placeholder="Любое">
+      </span>
+    </label>
+    <button class="btn search-submit" type="submit">Найти</button>
   </form>
 </section>
 
@@ -29,22 +52,31 @@
       {% for room in rooms %}{% include "_room_card.html" %}{% endfor %}
     </div>
   {% else %}
-    <p class="muted">На выбранные даты свободных номеров нет. Попробуйте другие даты или отель.</p>
+    <div class="empty-state">
+      <strong>Свободных номеров нет</strong>
+      На выбранные даты ничего не нашлось. Попробуйте другие даты или отель.
+    </div>
   {% endif %}
 {% endif %}
 
 <h2 class="section-title">Наши отели</h2>
 <div class="grid grid-3">
   {% for h in hotels %}
-  <article class="card">
-    {{ cover(h.photos, "🏨", h.name) }}
-    <div>{{ stars(h.stars) }}</div>
-    <h3><a href="/hotels/{{ h.id }}" style="text-decoration:none">{{ h.name }}</a></h3>
-    {% if ratings.get(h.id) %}<p class="muted" style="margin:0">⭐ {{ ratings[h.id][0] }} · отзывов: {{ ratings[h.id][1] }}</p>{% endif %}
-    <p class="muted">📍 {{ h.city }}, {{ h.address }}</p>
-    <p>{{ h.description }}</p>
-    <div class="chips">{% for a in h.amenity_list %}<span class="chip">{{ a }}</span>{% endfor %}</div>
-    <a class="btn" href="/rooms?hotel_id={{ h.id }}">Смотреть номера</a>
+  <article class="card stay-card">
+    <div class="media-frame">
+      {{ cover(h.photos, "🏨", h.name) }}
+      <span class="float-badge">{{ h.city }}</span>
+      {% if ratings.get(h.id) %}<span class="float-rating">★ {{ ratings[h.id][0] }}</span>{% endif %}
+    </div>
+    <div class="card-body">
+      <div>{{ stars(h.stars) }}</div>
+      <h3><a href="/hotels/{{ h.id }}">{{ h.name }}</a></h3>
+      {% if ratings.get(h.id) %}<p class="muted" style="margin:0">отзывов: {{ ratings[h.id][1] }}</p>{% endif %}
+      <p class="muted">{{ h.address }}</p>
+      <p class="excerpt">{{ h.description }}</p>
+      <div class="chips">{% for a in h.amenity_list %}<span class="chip">{{ a }}</span>{% endfor %}</div>
+      <div class="card-actions"><a class="btn full" href="/rooms?hotel_id={{ h.id }}">Смотреть номера</a></div>
+    </div>
   </article>
   {% endfor %}
 </div>

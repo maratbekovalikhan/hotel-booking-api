@@ -53,6 +53,13 @@
 {% endmacro %}
 
 {% macro cover(photos, icon, alt) %}
-{% if photos %}<img class="card-img" src="{{ photos[0].url }}" alt="{{ alt }}" loading="lazy">
-{% else %}<div class="card-img placeholder">{{ icon }}</div>{% endif %}
+<div class="media">
+  {% if photos %}
+  <img class="card-img" src="{{ photos[0].url }}" alt="{{ alt }}" loading="lazy"
+       onerror="this.hidden=true; this.nextElementSibling.hidden=false;">
+  <div class="card-img placeholder" hidden>{{ icon }}<span>Фото недоступно</span></div>
+  {% else %}
+  <div class="card-img placeholder">{{ icon }}<span>Фото скоро появится</span></div>
+  {% endif %}
+</div>
 {% endmacro %}

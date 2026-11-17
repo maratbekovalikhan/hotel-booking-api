@@ -5,26 +5,38 @@
 <h1>Номера</h1>
 <p class="muted">Отелей: {{ hotels|length }} · Номеров: {{ total_rooms }} · Найдено: {{ total }}</p>
 
-<form method="get" action="/rooms" class="card form-row" style="margin-bottom:1.5rem">
-  <label>Отель
-    <select name="hotel_id">
-      <option value="">Все отели</option>
-      {% for h in hotels %}<option value="{{ h.id }}" {{ 'selected' if hid == h.id }}>{{ h.name }}</option>{% endfor %}
-    </select>
+<form method="get" action="/rooms" class="search-panel filters-panel">
+  <label class="search-field">
+    <span class="search-label">Отель</span>
+    <span class="search-control">
+      <svg class="search-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 20V9.5L12 4l8 5.5V20" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9 20v-6h6v6" stroke="currentColor" stroke-width="1.8"/></svg>
+      <select name="hotel_id">
+        <option value="">Все отели</option>
+        {% for h in hotels %}<option value="{{ h.id }}" {{ 'selected' if hid == h.id }}>{{ h.name }}</option>{% endfor %}
+      </select>
+    </span>
   </label>
-  <label>Количество комнат
-    <select name="rooms_count">
-      <option value="">Любое</option>
-      {% for n in rooms_count_options %}<option value="{{ n }}" {{ 'selected' if rc == n }}>{{ n }}</option>{% endfor %}
-    </select>
+  <label class="search-field">
+    <span class="search-label">Комнат</span>
+    <span class="search-control">
+      <svg class="search-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 18V8h16v10" stroke="currentColor" stroke-width="1.8"/><path d="M4 14h16M8 8V6h8v2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      <select name="rooms_count">
+        <option value="">Любое</option>
+        {% for n in rooms_count_options %}<option value="{{ n }}" {{ 'selected' if rc == n }}>{{ n }}</option>{% endfor %}
+      </select>
+    </span>
   </label>
-  <label>Сортировка
-    <select name="sort">
-      {% for key, label in sorts.items() %}<option value="{{ key }}" {{ 'selected' if sort == key }}>{{ label }}</option>{% endfor %}
-    </select>
+  <label class="search-field">
+    <span class="search-label">Сортировка</span>
+    <span class="search-control">
+      <svg class="search-ico" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8 6v12M8 18l-3-3M8 18l3-3M16 18V6M16 6l-3 3M16 6l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <select name="sort">
+        {% for key, label in sorts.items() %}<option value="{{ key }}" {{ 'selected' if sort == key }}>{{ label }}</option>{% endfor %}
+      </select>
+    </span>
   </label>
-  <button class="btn" type="submit">Применить</button>
-  <a class="btn btn-ghost" style="color:var(--muted)" href="/rooms">Сбросить</a>
+  <button class="btn search-submit" type="submit">Применить</button>
+  <a class="btn btn-ghost search-reset" href="/rooms">Сбросить</a>
 </form>
 
 {% if rooms %}
@@ -33,6 +45,9 @@
   </div>
   {{ pager(page, pages, "/rooms", qs) }}
 {% else %}
-  <p class="muted">По выбранным условиям номеров нет.</p>
+  <div class="empty-state">
+    <strong>Номера не найдены</strong>
+    По выбранным условиям ничего нет. Сбросьте фильтры или выберите другой отель.
+  </div>
 {% endif %}
 {% endblock %}

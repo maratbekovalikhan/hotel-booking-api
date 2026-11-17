@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_macros.html" import stars %}
+{% from "_macros.html" import stars, cover %}
 {% block title %}О нас — Hotel Booking{% endblock %}
 {% block content %}
 <section class="hero">
@@ -21,13 +21,19 @@
 </div>
 <div class="grid grid-3">
   {% for h in hotels %}
-  <article class="card">
-    <div>{{ stars(h.stars) }}</div>
-    <h3><a href="/hotels/{{ h.id }}" style="text-decoration:none">{{ h.name }}</a></h3>
-    <p class="muted">📍 {{ h.city }}, {{ h.address }}</p>
-    <p>{{ h.description }}</p>
-    <div class="chips">{% for a in h.amenity_list %}<span class="chip">{{ a }}</span>{% endfor %}</div>
-    <p class="muted">📞 {{ h.phone }}<br>✉️ {{ h.email }}</p>
+  <article class="card stay-card">
+    <div class="media-frame">
+      {{ cover(h.photos, "🏨", h.name) }}
+      <span class="float-badge">{{ h.city }}</span>
+    </div>
+    <div class="card-body">
+      <div>{{ stars(h.stars) }}</div>
+      <h3><a href="/hotels/{{ h.id }}">{{ h.name }}</a></h3>
+      <p class="muted">{{ h.address }}</p>
+      <p class="excerpt">{{ h.description }}</p>
+      <div class="chips">{% for a in h.amenity_list %}<span class="chip">{{ a }}</span>{% endfor %}</div>
+      <p class="muted">{{ h.phone }}<br>{{ h.email }}</p>
+    </div>
   </article>
   {% endfor %}
 </div>

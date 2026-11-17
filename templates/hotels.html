@@ -7,15 +7,21 @@
 
 <div class="grid grid-3">
   {% for h in hotels %}
-  <article class="card">
-    {{ cover(h.photos, "🏨", h.name) }}
-    <div>{{ stars(h.stars) }}</div>
-    <h3><a href="/hotels/{{ h.id }}" style="text-decoration:none">{{ h.name }}</a></h3>
-    {% if ratings.get(h.id) %}<p style="margin:0">⭐ {{ ratings[h.id][0] }} <span class="muted">· отзывов: {{ ratings[h.id][1] }}</span></p>
-    {% else %}<p class="muted" style="margin:0">Отзывов пока нет</p>{% endif %}
-    <p class="muted">📍 {{ h.city }}, {{ h.address }}</p>
-    <div class="chips">{% for a in h.amenity_list %}<span class="chip">{{ a }}</span>{% endfor %}</div>
-    <a class="btn btn-ghost" style="color:var(--navy)" href="/hotels/{{ h.id }}">Подробнее и отзывы</a>
+  <article class="card stay-card">
+    <div class="media-frame">
+      {{ cover(h.photos, "🏨", h.name) }}
+      <span class="float-badge">{{ h.city }}</span>
+      {% if ratings.get(h.id) %}<span class="float-rating">★ {{ ratings[h.id][0] }}</span>{% endif %}
+    </div>
+    <div class="card-body">
+      <div>{{ stars(h.stars) }}</div>
+      <h3><a href="/hotels/{{ h.id }}">{{ h.name }}</a></h3>
+      {% if ratings.get(h.id) %}<p class="muted" style="margin:0">отзывов: {{ ratings[h.id][1] }}</p>
+      {% else %}<p class="muted" style="margin:0">Отзывов пока нет</p>{% endif %}
+      <p class="muted">{{ h.address }}</p>
+      <div class="chips">{% for a in h.amenity_list %}<span class="chip">{{ a }}</span>{% endfor %}</div>
+      <div class="card-actions"><a class="btn btn-ghost full" href="/hotels/{{ h.id }}">Подробнее и отзывы</a></div>
+    </div>
   </article>
   {% endfor %}
 </div>
